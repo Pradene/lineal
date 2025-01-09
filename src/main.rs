@@ -180,6 +180,77 @@ where K:
     Vector::new(result)
 }
 
+trait Lerp {
+    fn lerp(start: Self, end: Self, t: f32) -> Self;
+}
+
+fn lerp<T>(start: T, end: T, t: f32) -> T
+where T:
+    Lerp,
+{
+    T::lerp(start, end, t)
+}
+
+impl Lerp for f64 {
+    fn lerp(start: Self, end: Self, t: f32) -> Self {
+        let t = t.clamp(0., 1.);
+        start + (t as f64) * (end - start)
+    }
+}
+
+impl<K> Lerp for Vector<K>
+where K:
+    std::ops::Add<Output = K> +
+    std::ops::Sub<Output = K> +
+    std::ops::Mul<f32, Output = K> +
+    Copy +
+    Lerp,
+{
+    fn lerp(start: Self, end: Self, t: f32) -> Self {
+        assert_eq!(start.data.len(), end.data.len(), "Vectors must be the same length");
+        let result = 
+            start.data
+            .iter().zip(end.data.iter())
+            .map(|(&s, &e)| lerp(s, e, t))
+            .collect();
+
+        Self {
+            data: result
+        }
+    }
+}
+
+impl<K> Lerp for Matrix<K>
+where K:
+    std::ops::Add<Output = K> +
+    std::ops::Sub<Output = K> +
+    std::ops::Mul<f32, Output = K> +
+    Copy +
+    Lerp,
+{
+    fn lerp(start: Self, end: Self, t: f32) -> Self {
+        assert_eq!(start.rows, end.rows, "Matrices must have the same number of rows");
+        assert_eq!(start.cols, end.cols, "Matrices must have the same number of cols");
+        let result = 
+            start.data
+            .iter().zip(end.data.iter())
+            .map(|(start_row, end_row)| {
+                start_row
+                .iter()
+                .zip(end_row.iter())
+                .map(|(&s, &e)| lerp(s, e, t))
+                .collect()
+            })
+            .collect();
+
+        Self {
+            data: result,
+            rows: start.rows,
+            cols: start.cols
+        }
+    }
+}
+
 fn main() {
     let mut matrix = Matrix::new(vec![
         vec![1., 2., 3.],
@@ -204,5 +275,7 @@ fn main() {
     let v1 = Vector::new(vec![1., 2., 3.]);
     let v2 = Vector::new(vec![0., 10., -100.]);
 
-    println!("{:#?}", linear_combination(&[v1, v2], &[10., -2.]));
+    println!("{:#?}\n", linear_combination(&[v1, v2], &[10., -2.]));
+
+    println!("{}\n", lerp(0., 10., 0.343));
 }
