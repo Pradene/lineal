@@ -1,6 +1,5 @@
 use std::ops::{Neg, Add, Sub, Mul};
-use std::cmp::max;
-use std::cmp::Ord;
+use num::Signed;
 
 #[derive(Debug, Clone, Copy)]
 struct Vector<T, const N: usize> {
@@ -22,7 +21,9 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
 }
 
 impl<T, const N: usize> Add for Vector<T, N>
-where T: Add<Output = T> + Copy {
+where T:
+    Add<Output = T> + Copy
+{
     type Output = Self;
 
     fn add(self, v: Self) -> Self {
@@ -38,7 +39,9 @@ where T: Add<Output = T> + Copy {
 }
 
 impl<T, const N: usize> Sub for Vector<T, N>
-where T: Sub<Output = T> + Copy {
+where T:
+    Sub<Output = T> + Copy
+{
     type Output = Self;
 
     fn sub(self, v: Self) -> Self {
@@ -53,9 +56,13 @@ where T: Sub<Output = T> + Copy {
     }
 }
 
-impl<T, const N: usize> Vector<T, N>
-where T: Mul<Output = T> + Copy {
-    fn scl(self, scalar: T) -> Self {
+impl<T, const N: usize> Mul<T> for Vector<T, N>
+where T:
+    Mul<Output = T> + Copy
+{
+    type Output = Self;
+
+    fn mul(self, scalar: T) -> Self {
         let mut result = self.data;
         for i in 0..N {
             result[i] = self.data[i] * scalar;
@@ -68,16 +75,29 @@ where T: Mul<Output = T> + Copy {
 }
 
 impl<T, const N: usize> Vector<T, N>
+where T:
+    Mul<Output = T> + Copy
+{
+    fn scl(self, scalar: T) -> Self {
+        self * scalar
+    }
+}
+
+impl<T, const N: usize> Vector<T, N>
 where T: 
     Mul<Output = T> +
     Add<Output = T> +
     Copy + 
+    Into<f32> +
     Default
 {
-    fn dot(&self, v: Vector<T, N>) -> T {
+    fn dot(&self, v: Vector<T, N>) -> f32 {
         assert_eq!(self.data.len(), v.data.len(), "Vectors must be of same length");
 
-        self.data.iter().zip(v.data.iter()).fold(T::default(), |sum, (&x, &y)| sum + x * y)
+        self.data
+        .iter()
+        .zip(v.data.iter())
+        .fold(0., |sum, (&x, &y)| sum + x.into() * y.into())
     }
 }
 
@@ -112,316 +132,241 @@ impl<T, const N: usize> Vector<T, N>
 where T:
     Neg<Output = T> +
     Copy + 
-    Ord +
+    Signed +
     Into<f32>
 {
     fn norm_1(&self) -> f32 {
-        self.data.iter().fold(0., |sum, &x| sum + max(x, -x).into())
+        self.data.iter().fold(0., |sum, &x| sum + x.abs().into())
     }
 }
 
 impl<T, const N: usize> Vector<T, N>
 where T:
-    Copy + Into<f32>
+    Copy +
+    Into<f32> +
+    Signed
 {
     fn norm(&self) -> f32 {
         self.data
         .iter()
-        .fold(0., |sum, &x| sum + x.into().powf(2.))
+        .fold(0., |sum, &x| sum + x.abs().into().powf(2.))
         .powf(0.5)
     }
 }
 
-
-fn main() {
-    let u = Vector::from([2, 3]);
-    let v = Vector::from([1, 4]);
-
-    // Using the `+` operator (this calls `add` under the hood)
-    let result1 = u + v;
-    println!("{:#?}", result1);
-    let result2 = u.add(v);
-    println!("{:#?}", result2);
-    let result3 = u.scl(5);
-    println!("{:#?}", result3);
-    // println!("{:#?}", result4);
-
-    let u1 = Vector::from([-1., -2.]);
-    println!("{}, {}", u1.norm_1(), u1.norm());
+impl<T, const N: usize> Vector<T, N>
+where T:
+    Copy +
+    Into<f32> +
+    Signed +
+    PartialOrd
+{
+    fn norm_inf(&self) -> f32 {
+        self.data
+        .iter()
+        .fold(0., |sum, &x| f32::max(sum, x.abs().into()))
+    }
 }
 
 
+fn angle_cos<T, const N: usize>(
+    u: &Vector<T, N>,
+    v: &Vector<T, N>
+) -> f32
+where T:
+    Copy +
+    Default +
+    Into<f32> + 
+    Signed
+{
+    let dot_product = u.dot(*v);
+    let u_length = u.norm();
+    let v_length = v.norm();
+    dot_product / (u_length * v_length)
+}
+
+fn cross_product<T>(
+    u: &Vector<T, 3>,
+    v: &Vector<T, 3>
+) -> Vector<T, 3>
+where T:
+    Copy +
+    Default +
+    Signed +
+    Into<f32>
+{
+    let x = u.data[1] * v.data[2] - u.data[2] * v.data[1];
+    let y = u.data[2] * v.data[0] - u.data[0] * v.data[2];
+    let z = u.data[0] * v.data[1] - u.data[1] * v.data[0];
+
+    Vector {
+        data: [x, y, z],
+    }
+}
 
 
-// impl<K> Vector<K>
-// where K: Numeric
-// {
-//     fn new(data: Vec<K>) -> Self {
-//         Vector {
-//             data: data
-//         }
-//     }
+#[derive(Debug, Clone)]
+struct Matrix<T, const M: usize, const N: usize> {
+    data:  [[T; N]; M],
+}
 
-//     fn add(&mut self, v: Vector<K>) {
-//         assert_eq!(self.data.len(), v.data.len(), "Vectors must be of the same length");
+impl<T, const M: usize, const N: usize> Matrix<T, M, N> {
+    fn new(data: [[T; N]; M]) -> Self {
+        Self {
+            data: data
+        }
+    }
+}
 
-//         for i in 0..self.data.len() {
-//             self.data[i] = self.data[i] + v.data[i]
-//         }
-//     }
+impl<T, const M: usize, const N: usize> From<[[T; N]; M]> for Matrix<T, M, N> {
+    fn from(data: [[T; N]; M]) -> Self {
+        Matrix {
+            data: data
+        }
+    }
+}
 
-//     fn sub(&mut self, v: Vector<K>) {
-//         assert_eq!(self.data.len(), v.data.len(), "Vectors must be of the same length");
+impl<T, const M: usize, const N: usize> Add for Matrix<T, M, N>
+where T: Add<Output = T> + Copy {
+    type Output = Self;
 
-//         for i in 0..self.data.len() {
-//             self.data[i] = self.data[i] - v.data[i]
-//         }
-//     }
+    fn add(self, m: Self) -> Self {
+        let mut result = self.data;
+        for i in 0..M {
+            for j in 0..N {
+                result[i][j] = self.data[i][j] + m.data[i][j];
+            }
+        }
 
-//     fn scl(&mut self, scale: K) {
-//         for i in 0..self.data.len() {
-//             self.data[i] = self.data[i] * scale
-//         }
-//     }
+        Matrix {
+            data: result
+        }
+    }
+}
 
-//     fn dot(&self, v: &Vector<K>) -> K {
-//         assert_eq!(self.data.len(), v.data.len(), "Vectors must be of same length");
+impl<T, const M: usize, const N: usize> Sub for Matrix<T, M, N>
+where T: Sub<Output = T> + Copy {
+    type Output = Self;
 
-//         self.data.iter().zip(v.data.iter()).fold(K::default(), |sum, (&x, &y)| sum + x * y)
-//     }
+    fn sub(self, m: Self) -> Self {
+        let mut result = self.data;
+        for i in 0..M {
+            for j in 0..N {
+                result[i][j] = self.data[i][j] - m.data[i][j];
+            }
+        }
 
-//     fn norm_1(&self) -> f32 {
-//         self.data.iter().fold(0., |sum, &x| sum + x.abs())
-//     }
+        Matrix {
+            data: result
+        }
+    }
+}
 
-//     fn norm(&self) -> f32 {
-//         self.data.iter().fold(0., |sum, &x| sum + x.powf(2.)).powf(0.5)
-//     }
-// }
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy + Mul<Output = T>
+{
+    fn scl(self, scalar: T) -> Self {
+        let mut data = self.data;
+        for i in 0..M {
+            for j in 0..N {
+                data[i][j] = self.data[i][j] * scalar;
+            }
+        }
 
-// #[derive(Debug, Clone)]
-// struct Matrix<K> {
-//     data: Vec<Vec<K>>,
-//     rows: usize,
-//     cols: usize,
-// }
+        Matrix {
+            data: data
+        }
+    }
+}
 
-// impl<K> Matrix<K>
-// where K: Numeric
-// {
-//     fn new(data: Vec<Vec<K>>) -> Self {
-        
-//         let rows = data.len();
-//         let cols = if rows > 0 { data[0].len() } else { 0 };
-        
-//         Matrix {
-//             data: data,
-//             rows: rows,
-//             cols: cols
-//         }
-//     }
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy +
+    Mul<Output = T> +
+    Add<Output = T> +
+    Default
+{
+    fn mul_mat(&self, matrix: &Matrix<T, M, N>) -> Matrix<T, M, N> {
 
-//     fn add(&mut self, matrix: &Matrix<K>) {
-//         assert_eq!(self.rows, matrix.rows, "Matrices rows size differ: {} vs {}", self.rows, matrix.rows);
-//         assert_eq!(self.cols, matrix.cols, "Matrices cols size differ: {} vs {}", self.cols, matrix.cols);
+        let mut data = [[T::default(); N]; M];
 
-//         for i in 0..self.rows {
-//             for j in 0..self.cols {
-//                 self.data[i][j] = self.data[i][j] + matrix.data[i][j]
-//             }
-//         }
-//     }
+        for i in 0..M {
+            for j in 0..N {
+                for k in 0..N {
+                    data[i][j] = data[i][j] + self.data[i][k] * matrix.data[k][j];
+                }
+            }
+        }
 
-//     fn sub(&mut self, matrix: &Matrix<K>) {
-//         assert_eq!(self.rows, matrix.rows, "Matrices rows size differ: {} vs {}", self.rows, matrix.rows);
-//         assert_eq!(self.cols, matrix.cols, "Matrices cols size differ: {} vs {}", self.cols, matrix.cols);
+        Matrix {
+            data: data
+        }
+    }
+}
 
-//         for i in 0..self.rows {
-//             for j in 0..self.cols {
-//                 self.data[i][j] = self.data[i][j] - matrix.data[i][j]
-//             }
-//         }
-//     }
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy +
+    Default +
+    Mul<Output = T> +
+    Add<Output = T>
+{
+    fn mul_vec(&mut self, vector: &Vector<T, N>) -> Vector<T, M> {
+        let mut data = [T::default(); M];
 
-//     fn scl(&mut self, scale: K) {
-//         for i in 0..self.rows {
-//             for j in 0..self.cols {
-//                 self.data[i][j] = self.data[i][j] * scale
-//             }
-//         }
-//     }
+        for i in 0..M {
+            for j in 0..N {
+                data[i] = data[i] + self.data[i][j] * vector.data[j];
+            }
+        }
 
-//     fn mul_mat(&self, matrix: &Matrix<K>) -> Matrix<K> {
-//         assert_eq!(self.cols, matrix.rows, "Cannot multiply matrices cols and rows differ: {} vs {}", self.cols, matrix.rows);
+        Vector {
+            data: data
+        }
+    }
+}
 
-//         let mut result = vec![vec![K::default(); matrix.cols]; self.rows];
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy +
+    Default +
+    Mul<Output = T> +
+    Add<Output = T>
+{
+    fn transpose(&self) -> Matrix<T, N, M> {
+        let mut data = [[T::default(); M]; N];
 
-//         for i in 0..self.rows {
-//             for j in 0..matrix.cols {
-//                 for k in 0..self.cols {
-//                     result[i][j] = result[i][j] + self.data[i][k] * matrix.data[k][j];
-//                 }
-//             }
-//         }
+        for i in 0..N {
+            for j in 0..M {
+                data[i][j] = self.data[j][i];
+            }
+        }
 
-//         Matrix::new(result)
-//     }
+        Matrix {
+            data: data
+        }
+    }
+}
 
-//     fn mul_vec(&mut self, vector: &Vector<K>) -> Vector<K> {
-//         assert_eq!(self.cols, vector.data.len(), "Cannot multiply matirx by vector: {:?} vs {}", self.data, self.rows);
+fn lerp<T>(x: T, y: T, t: f32) -> T
+where T:
+    Add<Output = T> +
+    Sub<Output = T> +
+    Mul<f32, Output = T> +
+    Copy
+{
+    x + (y - x) * t
+}
 
-//         let mut result = Vec::with_capacity(self.rows);
 
-//         for i in 0..self.rows {
-//             let mut sum = K::default();
-//             for j in 0..self.cols {
-//                 sum = sum + self.data[i][j] * vector.data[j];
-//             }
+fn main() {
+    let u = Vector::from([4., 2., -3.]);
+    let v = Vector::from([-2., -5., 16.]);
+    let cross = cross_product(&u, &v);
+    println!("{:?}", cross);
+    println!("{:?}", v.scl(5.));
+    println!("{:?}", v.mul(5.));
+    println!("{:?}", v * 5.);
+}
 
-//             result.push(sum);
-//         }
-
-//         Vector::new(result)
-//     }
-
-//     fn transpose(&self) -> Matrix<K> {
-//         let mut data: Vec<Vec<K>> = Vec::with_capacity(self.cols);
-
-//         for i in 0..self.cols {
-//             let mut new_row: Vec<K> = Vec::with_capacity(self.rows);
-//             for j in 0..self.rows {
-//                 new_row.push(self.data[j][i]);
-//             }
-
-//             data.push(new_row);
-//         }
-
-//         Matrix::new(data)
-//     }
-
-//     fn print(&self) {
-//         println!("rows: {}\ncols: {}\nvalues: {:?}\n", self.rows, self.cols, self.data);
-//     }
-// }
-
-// fn linear_combination<K>(vectors: &[&Vector<K>], scalars: &[K]) -> Vector<K>
-// where K: Numeric
-// {
-//     // Check vectors length is not equal to 0
-//     assert!(!vectors.is_empty(), "Vectors is empty");
-
-//     // Check if vectors length and scalars length are equal
-//     assert_eq!(vectors.len(), scalars.len(), "Vectors length and scalars length must be equal");
-    
-//     // Check all vector of vectors have the same length
-//     assert!(vectors.iter().all(|v| v.data.len() == vectors[0].data.len()), "All vectors must have the same length");
-
-//     let mut result = vec![K::default(); vectors[0].data.len()];
-
-//     for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
-//         result.iter_mut()
-//             .zip(vector.data.iter())
-//             .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
-//     }
-
-//     Vector::new(result)
-// }
-
-// trait Lerp {
-//     fn lerp(start: Self, end: Self, t: f32) -> Self;
-// }
-
-// fn lerp<T>(start: T, end: T, t: f32) -> T
-// where T:
-//     Lerp,
-// {
-//     T::lerp(start, end, t)
-// }
-
-// impl Lerp for f64 {
-//     fn lerp(start: Self, end: Self, t: f32) -> Self {
-//         let t = t.clamp(0., 1.);
-//         start + (t as f64) * (end - start)
-//     }
-// }
-
-// impl<K> Lerp for Vector<K>
-// where K:
-//     Numeric +
-//     Lerp,
-// {
-//     fn lerp(start: Self, end: Self, t: f32) -> Self {
-//         assert_eq!(start.data.len(), end.data.len(), "Vectors must be the same length");
-//         let result = 
-//             start.data
-//             .iter().zip(end.data.iter())
-//             .map(|(&s, &e)| lerp(s, e, t))
-//             .collect();
-
-//         Self {
-//             data: result
-//         }
-//     }
-// }
-
-// impl<K> Lerp for Matrix<K>
-// where K:
-//     Numeric +
-//     Lerp,
-// {
-//     fn lerp(start: Self, end: Self, t: f32) -> Self {
-//         assert_eq!(start.rows, end.rows, "Matrices must have the same number of rows");
-//         assert_eq!(start.cols, end.cols, "Matrices must have the same number of cols");
-        
-//         let result = 
-//             start.data
-//             .iter().zip(end.data.iter())
-//             .map(|(start_row, end_row)| {
-//                 start_row
-//                 .iter()
-//                 .zip(end_row.iter())
-//                 .map(|(&s, &e)| lerp(s, e, t))
-//                 .collect()
-//             })
-//             .collect();
-
-//         Self {
-//             data: result,
-//             rows: start.rows,
-//             cols: start.cols
-//         }
-//     }
-// }
-
-// fn main() {
-//     let mut matrix = Matrix::new(vec![
-//         vec![1., 2., 3.],
-//         vec![4., 5., 6.],
-//         vec![7., 8., 9.],
-//     ]);
-
-//     let other = matrix.clone();
-
-//     matrix.mul_mat(&other);
-//     matrix.print();
-//     matrix.add(&other);
-//     matrix.print();
-//     matrix.sub(&other);
-//     matrix.print();
-//     matrix.scl(0.5);
-//     matrix.print();
-
-//     let transposed = matrix.transpose();
-//     transposed.print();
-
-//     let v1 = Vector::new(vec![1., 2., 3.]);
-//     let v2 = Vector::new(vec![0., 10., -100.]);
-
-//     println!("{:#?}\n", linear_combination(&[&v1, &v2], &[10., -2.]));
-
-//     println!("{}\n", lerp(0., 10., 0.343));
-
-//     let mut u = Vector::new(vec![-1., 6.]);
-//     let v = Vector::new(vec![3., 2.]);
-//     println!("{:#?}\n", u.dot(&v));
-// }
