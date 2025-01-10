@@ -38,6 +38,12 @@ where K:
             self.data[i] = self.data[i] * scale
         }
     }
+
+    fn dot(&self, v: &Vector<K>) -> K {
+        assert_eq!(self.data.len(), v.data.len(), "Vectors must be of same length");
+
+        self.data.iter().zip(v.data.iter()).fold(K::default(), |sum, (&x, &y)| sum + x * y)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -151,7 +157,7 @@ where K:
     }
 }
 
-fn linear_combination<K>(vectors: &[Vector<K>], scalars: &[K]) -> Vector<K>
+fn linear_combination<K>(vectors: &[&Vector<K>], scalars: &[K]) -> Vector<K>
 where K:
     std::ops::Add<Output = K> +
     std::ops::Sub<Output = K> +
@@ -275,7 +281,11 @@ fn main() {
     let v1 = Vector::new(vec![1., 2., 3.]);
     let v2 = Vector::new(vec![0., 10., -100.]);
 
-    println!("{:#?}\n", linear_combination(&[v1, v2], &[10., -2.]));
+    println!("{:#?}\n", linear_combination(&[&v1, &v2], &[10., -2.]));
 
     println!("{}\n", lerp(0., 10., 0.343));
+
+    let mut u = Vector::new(vec![-1., 6.]);
+    let v = Vector::new(vec![3., 2.]);
+    println!("{:#?}\n", u.dot(&v));
 }
