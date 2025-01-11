@@ -195,12 +195,12 @@ where T:
     Signed +
     Into<f32>
 {
-    let x = u.data[1] * v.data[2] - u.data[2] * v.data[1];
-    let y = u.data[2] * v.data[0] - u.data[0] * v.data[2];
-    let z = u.data[0] * v.data[1] - u.data[1] * v.data[0];
-
     Vector {
-        data: [x, y, z],
+        data: [
+            u.data[1] * v.data[2] - u.data[2] * v.data[1],
+            u.data[2] * v.data[0] - u.data[0] * v.data[2],
+            u.data[0] * v.data[1] - u.data[1] * v.data[0],    
+        ],
     }
 }
 
@@ -266,7 +266,7 @@ impl<T, const M: usize, const N: usize> Matrix<T, M, N>
 where T:
     Copy + Mul<Output = T>
 {
-    fn scl(self, scalar: T) -> Self {
+    fn scl(&self, scalar: T) -> Self {
         let mut data = self.data;
         for i in 0..M {
             for j in 0..N {
@@ -349,6 +349,22 @@ where T:
     }
 }
 
+impl<T, const N: usize> Matrix<T, N, N>
+where T:
+    Copy +
+    Default +
+    Add<Output = T>
+{
+    fn trace(&self) -> T {
+        let mut sum = T::default();
+        for i in 0..N {
+            sum = sum + self.data[i][i]
+        }
+
+        sum
+    }
+}
+
 fn lerp<T>(x: T, y: T, t: f32) -> T
 where T:
     Add<Output = T> +
@@ -359,14 +375,77 @@ where T:
     x + (y - x) * t
 }
 
+// reduced row echelon form of matrix 
+// Find the pivot row (row with value of col with value != 0.)
+// if pivot not found skipto next col
+// else make pivot equal one by multiply it (and multiply all value of row by this value)
+// then substract all rows below by x * row pivot 
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy +
+    Signed +
+    PartialOrd
+{
+    fn row_echelon(&mut self) -> Matrix<T, M, N> {
+
+        let mut pivot_row = 0;
+        
+        for col in 0..N {
+            if pivot_row >= M {
+                break;
+            }
+
+            let mut pivot = None;
+            for row in pivot_row..M {
+                if self.data[row][col].abs() > T::zero() {
+                    pivot = Some(row);
+                    break;
+                }
+            }
+
+            if pivot.is_none() {
+                continue;
+            }
+
+            let pivot = pivot.unwrap();
+
+            if pivot != pivot_row {
+                self.data.swap(pivot, pivot_row);
+            }
+
+            let pivot_value = self.data[pivot_row][col];
+
+            if pivot_value == T::zero() {
+                continue;
+            }
+
+            for j in col..N {
+                self.data[pivot_row][j] = self.data[pivot_row][j] / pivot_value;
+            }
+
+            for row in 0..M {
+                if row == pivot_row {
+                    continue
+                }
+
+                let factor = self.data[row][col];
+                for j in col..N {
+                    self.data[row][j] = self.data[row][j] - factor * self.data[pivot_row][j];
+                }
+            }
+
+            pivot_row += 1
+        }
+        
+        Matrix {
+            data: self.data
+        }
+    }
+}
+
 
 fn main() {
-    let u = Vector::from([4., 2., -3.]);
-    let v = Vector::from([-2., -5., 16.]);
-    let cross = cross_product(&u, &v);
-    println!("{:?}", cross);
-    println!("{:?}", v.scl(5.));
-    println!("{:?}", v.mul(5.));
-    println!("{:?}", v * 5.);
+    println!("Hello World!");   
 }
 
