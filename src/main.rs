@@ -409,13 +409,11 @@ where T:
             }
 
             let pivot = pivot.unwrap();
-
             if pivot != pivot_row {
                 self.data.swap(pivot, pivot_row);
             }
 
             let pivot_value = self.data[pivot_row][col];
-
             if pivot_value == T::zero() {
                 continue;
             }
@@ -444,8 +442,76 @@ where T:
     }
 }
 
+impl<T, const N: usize> Matrix<T, N, N>
+where T:
+    Copy +
+    Signed +
+    PartialOrd +
+    Into<f32>
+{
+    fn determinant(&mut self) -> f32 {
+        let mut pivot_row = 0;
+        let mut det = 1.;
+        
+        for col in 0..N {
+            if pivot_row >= N {
+                break;
+            }
+
+            let mut pivot = None;
+            for row in pivot_row..N {
+                if self.data[row][col].abs() > T::zero() {
+                    pivot = Some(row);
+                    break;
+                }
+            }
+
+            if pivot.is_none() {
+                return 0.0;
+            }
+
+            let pivot = pivot.unwrap();
+
+            if pivot != pivot_row {
+                self.data.swap(pivot, pivot_row);
+                det = det * -1.;
+            }
+
+            let pivot_value = self.data[pivot_row][col];
+            if pivot_value == T::zero() {
+                continue;
+            }
+
+            for row in 0..N {
+                if pivot_row == row {
+                    continue
+                }
+
+                let factor = self.data[row][col] / pivot_value;
+                for j in col..N {
+                    self.data[row][j] = self.data[row][j] - factor * self.data[pivot_row][j];
+                }
+            }
+
+            pivot_row += 1;
+        }
+
+        // Multiply the diagonal elements to get the determinant
+        for i in 0..N {
+            det *= self.data[i][i].into();
+        }
+
+        det
+    }
+}
+
 
 fn main() {
-    println!("Hello World!");   
+    let mut u = Matrix::from([
+        [8., 5., -2.],
+        [4., 7., 20.],
+        [7., 6., 1.],
+    ]);
+    println!("{}", u.determinant());   
 }
 
