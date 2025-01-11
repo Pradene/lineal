@@ -387,8 +387,8 @@ where T:
     Signed +
     PartialOrd
 {
-    fn row_echelon(&mut self) -> Matrix<T, M, N> {
-
+    fn row_echelon(&self) -> Matrix<T, M, N> {
+        let mut m = Matrix::from(self.data);
         let mut pivot_row = 0;
         
         for col in 0..N {
@@ -398,7 +398,7 @@ where T:
 
             let mut pivot = None;
             for row in pivot_row..M {
-                if self.data[row][col].abs() > T::zero() {
+                if m.data[row][col].abs() > T::zero() {
                     pivot = Some(row);
                     break;
                 }
@@ -410,16 +410,16 @@ where T:
 
             let pivot = pivot.unwrap();
             if pivot != pivot_row {
-                self.data.swap(pivot, pivot_row);
+                m.data.swap(pivot, pivot_row);
             }
 
-            let pivot_value = self.data[pivot_row][col];
+            let pivot_value = m.data[pivot_row][col];
             if pivot_value == T::zero() {
                 continue;
             }
 
             for j in col..N {
-                self.data[pivot_row][j] = self.data[pivot_row][j] / pivot_value;
+                m.data[pivot_row][j] = m.data[pivot_row][j] / pivot_value;
             }
 
             for row in 0..M {
@@ -427,18 +427,32 @@ where T:
                     continue
                 }
 
-                let factor = self.data[row][col];
+                let factor = m.data[row][col];
                 for j in col..N {
-                    self.data[row][j] = self.data[row][j] - factor * self.data[pivot_row][j];
+                    m.data[row][j] = m.data[row][j] - factor * m.data[pivot_row][j];
                 }
             }
 
             pivot_row += 1
         }
         
-        Matrix {
-            data: self.data
+        m
+    }
+
+    fn rank(&self) -> usize {
+        let mut rank = 0;
+        let rref = self.row_echelon();
+
+        for row in 0..M {
+            for col in 0..N {
+                if rref.data[row][col] != T::zero() {
+                    rank += 1;
+                    break;
+                }
+            }
         }
+        
+        rank
     }
 }
 
@@ -449,69 +463,135 @@ where T:
     PartialOrd +
     Into<f32>
 {
-    fn determinant(&mut self) -> f32 {
-        let mut pivot_row = 0;
-        let mut det = 1.;
-        
-        for col in 0..N {
-            if pivot_row >= N {
-                break;
-            }
-
-            let mut pivot = None;
-            for row in pivot_row..N {
-                if self.data[row][col].abs() > T::zero() {
-                    pivot = Some(row);
-                    break;
-                }
-            }
-
-            if pivot.is_none() {
-                return 0.0;
-            }
-
-            let pivot = pivot.unwrap();
-
-            if pivot != pivot_row {
-                self.data.swap(pivot, pivot_row);
-                det = det * -1.;
-            }
-
-            let pivot_value = self.data[pivot_row][col];
-            if pivot_value == T::zero() {
-                continue;
-            }
-
-            for row in 0..N {
-                if pivot_row == row {
-                    continue
-                }
-
-                let factor = self.data[row][col] / pivot_value;
-                for j in col..N {
-                    self.data[row][j] = self.data[row][j] - factor * self.data[pivot_row][j];
-                }
-            }
-
-            pivot_row += 1;
-        }
-
-        // Multiply the diagonal elements to get the determinant
+    fn lu_decomposition(&self) -> (Matrix<T, N, N>, Matrix<T, N, N>, usize) {
+        let mut l = Matrix::from([[T::zero(); N]; N]);
+        let mut u = Matrix::from(self.data);
+        let mut permutation_count = 0;
+    
         for i in 0..N {
-            det *= self.data[i][i].into();
+            // Pivoting (partial pivoting)
+            let mut max_row = i;
+            for k in i + 1..N {
+                if u.data[k][i].abs() > u.data[max_row][i].abs() {
+                    max_row = k;
+                }
+            }
+
+            if max_row != i {
+                u.data.swap(i, max_row);
+                permutation_count += 1;
+            }
+    
+            // Compute L and U
+            for j in i..N {
+                l.data[j][i] = u.data[j][i] / u.data[i][i];
+            }
+
+            for j in i + 1..N {
+                for k in i..N {
+                    u.data[j][k] = u.data[j][k] - l.data[j][i] * u.data[i][k];
+                }
+            }
+        }
+    
+        // Set diagonal of L to 1
+        for i in 0..N {
+            l.data[i][i] = T::one();
+        }
+    
+        (l, u, permutation_count)
+    }
+    
+    // Function to compute the determinant using LU Decomposition
+    fn determinant(&self) -> T {
+        let (l, u, permutation_count) = self.lu_decomposition();
+        let mut determinant = T::one();
+    
+        // Product of diagonal elements of U
+        for i in 0..N {
+            determinant = determinant * u.data[i][i];
+        }
+    
+        // Adjust for row swaps
+        if permutation_count % 2 != 0 {
+            determinant = -determinant;
+        }
+    
+        determinant
+    }
+    
+    // Function to compute the inverse using LU Decomposition
+    fn inverse(&self) -> Option<Matrix<T, N, N>> {
+        let det = self.determinant();
+        if det == T::zero() {
+            return None;
         }
 
-        det
+        let (l, u, _) = self.lu_decomposition();
+        let mut inverse = [[T::zero(); N]; N];
+    
+        // Solve for each column of the identity matrix
+        for i in 0..N {
+            let mut b = [T::zero(); N];
+            b[i] = T::one();
+    
+            // Solve L * y = b using forward substitution
+            let mut y = [T::zero(); N];
+            for j in 0..N {
+                y[j] = b[j];
+                for k in 0..j {
+                    y[j] = y[k] - l.data[j][k] * y[k];
+                }
+            }
+    
+            // Solve U * x = y using backward substitution
+            let mut x = [T::zero(); N];
+            for j in (0..N).rev() {
+                x[j] = y[j] / u.data[j][j];
+                for k in (j + 1..N).rev() {
+                    x[j] = x[j] - u.data[j][k] * x[k] / u.data[j][j];
+                }
+            }
+    
+            // Assign the solution to the inverse matrix
+            for j in 0..N {
+                inverse[j][i] = x[j];
+            }
+        }
+    
+        Some(Matrix {
+            data: inverse
+        })
     }
 }
 
-
 fn main() {
-    let mut u = Matrix::from([
+    let u = Matrix::from([
         [8., 5., -2.],
         [4., 7., 20.],
         [7., 6., 1.],
     ]);
-    println!("{}", u.determinant());   
-}
+    println!("{:?}", u.determinant());
 
+    let v = Matrix::from([
+        [ 8., 5., -2., 4.],
+        [ 4., 2.5, 20., 4.],
+        [ 8., 5., 1., 4.],
+        [28., -4., 17., 1.],
+    ]);
+    println!("{:?}", v.determinant());
+
+    let t = Matrix::from([
+        [1., 0., 0.],
+        [0., 1., 0.],
+        [0., 0., 1.],
+    ]);
+    println!("{}", t.rank());
+
+    let z = Matrix::from([
+        [ 1., 2., 0., 0.],
+        [ 2., 4., 0., 0.],
+        [-1., 2., 1., 1.],
+    ]);
+    println!("{}", z.rank());
+}
