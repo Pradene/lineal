@@ -1,0 +1,396 @@
+use std::ops::{
+    Neg, 
+    Add, AddAssign,
+    Sub, SubAssign,
+    Mul, MulAssign,
+    Index, IndexMut
+};
+use num::Signed;
+
+use crate::vector::Vector;
+
+#[derive(Debug, Clone)]
+pub struct Matrix<T, const M: usize, const N: usize> {
+    pub data:  [[T; N]; M],
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N> {
+    fn new(data: [[T; N]; M]) -> Self {
+        Self {
+            data: data
+        }
+    }
+}
+
+impl<T, const M: usize, const N: usize> From<[[T; N]; M]> for Matrix<T, M, N> {
+    fn from(data: [[T; N]; M]) -> Self {
+        Self {
+            data: data
+        }
+    }
+}
+
+impl<T, const M: usize, const N: usize> Index<usize> for Matrix<T, M, N> {
+    type Output = [T; N];
+
+    fn index(&self, i: usize) -> &Self::Output {
+        if i < M {
+            &self.data[i] // Return a reference to the element at index `i`
+        } else {
+            panic!("Index out of bounds");
+        }
+    }
+}
+
+// Implement IndexMut trait for mutable access to elements (self[i] = value)
+impl<T, const M: usize, const N: usize> IndexMut<usize> for Matrix<T, M, N> {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        if i < M {
+            &mut self.data[i] // Return a mutable reference to the element at index `i`
+        } else {
+            panic!("Index out of bounds");
+        }
+    }
+}
+
+impl<T, const M: usize, const N: usize> Add for Matrix<T, M, N>
+where T:
+    Add<Output = T> +
+    Copy
+{
+    type Output = Self;
+
+    fn add(self, m: Self) -> Self {
+        let mut result = self.clone();
+        for i in 0..M {
+            for j in 0..N {
+                result[i][j] = result[i][j] + m[i][j];
+            }
+        }
+
+        result
+    }
+}
+
+impl<T, const M: usize, const N: usize> Sub for Matrix<T, M, N>
+where T:
+    Sub<Output = T> +
+    Copy
+{
+    type Output = Self;
+
+    fn sub(self, m: Self) -> Self {
+        let mut result = self.clone();
+        for i in 0..M {
+            for j in 0..N {
+                result[i][j] = result[i][j] - m[i][j];
+            }
+        }
+
+        result
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Mul<Output = T> +
+    Copy
+{
+    fn scl(&self, scalar: T) -> Self {
+        let mut result = self.clone();
+        for i in 0..M {
+            for j in 0..N {
+                result[i][j] = result[i][j] * scalar;
+            }
+        }
+
+        result
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where
+T:
+    Copy +
+    Mul<Output = T> +
+    Add<Output = T> +
+    Default
+{
+    // Matrix multiplication: self (M x N) * matrix (N x P) -> result (M x P)
+    fn mul_mat<const P: usize>(&self, matrix: &Matrix<T, N, P>) -> Matrix<T, M, P> {
+        let mut result = Matrix {
+            data: [[T::default(); P]; M],
+        };
+
+        for i in 0..M {
+            for j in 0..P {
+                for k in 0..N {
+                    result[i][j] = result[i][j] + self[i][k] * matrix[k][j];
+                }
+            }
+        }
+
+        result
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy +
+    Default +
+    Mul<Output = T> +
+    Add<Output = T>
+{
+    fn mul_vec(&mut self, vector: &Vector<T, N>) -> Vector<T, M> {
+        let mut result = Vector {
+            data: [T::default(); M]
+        };
+
+        for i in 0..M {
+            for j in 0..N {
+                result[i] = result[i] + self[i][j] * vector[j];
+            }
+        }
+
+        result
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy +
+    Default +
+    Mul<Output = T> +
+    Add<Output = T>
+{
+    pub fn transpose(&self) -> Matrix<T, N, M> {
+        let mut result = Matrix {
+            data: [[T::default(); M]; N]
+        };
+
+        for i in 0..N {
+            for j in 0..M {
+                result[i][j] = self[j][i];
+            }
+        }
+
+        result
+    }
+}
+
+impl<T, const N: usize> Matrix<T, N, N>
+where T:
+    Copy +
+    Default +
+    Add<Output = T>
+{
+    pub fn trace(&self) -> T {
+        let mut result = T::default();
+        for i in 0..N {
+            result = result + self[i][i]
+        }
+
+        result
+    }
+}
+
+impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+where T:
+    Copy +
+    Signed +
+    SubAssign +
+    PartialOrd
+{
+    pub fn row_echelon(&self) -> Matrix<T, M, N> {
+        let mut result = self.clone();
+        let mut pivot_row = 0;
+        
+        for col in 0..N {
+            if pivot_row >= M {
+                break;
+            }
+
+            let mut pivot = None;
+            for row in pivot_row..M {
+                if result[row][col].abs() > T::zero() {
+                    pivot = Some(row);
+                    break;
+                }
+            }
+
+            if pivot.is_none() {
+                continue;
+            }
+
+            let pivot = pivot.unwrap();
+            if pivot != pivot_row {
+                result.data.swap(pivot, pivot_row);
+            }
+
+            let pivot_value = result[pivot_row][col];
+            if pivot_value == T::zero() {
+                continue;
+            }
+
+            for j in col..N {
+                result[pivot_row][j] = result[pivot_row][j] / pivot_value;
+            }
+
+            for row in 0..M {
+                if row == pivot_row {
+                    continue
+                }
+
+                let factor = result[row][col];
+                for j in col..N {
+                    result[row][j] = result[row][j] - factor * result[pivot_row][j];
+                }
+            }
+
+            pivot_row += 1
+        }
+        
+        result
+    }
+
+    pub fn rank(&self) -> usize {
+        let mut rank = 0;
+        let rref = self.row_echelon();
+
+        for row in 0..M {
+            for col in 0..N {
+                if rref[row][col] != T::zero() {
+                    rank = rank + 1;
+                    break;
+                }
+            }
+        }
+        
+        rank
+    }
+}
+
+impl<T, const N: usize> Matrix<T, N, N>
+where T:
+    Copy +
+    Signed +
+    PartialOrd +
+    SubAssign +
+    Into<f32>
+{
+    fn lu_decomposition(&self) -> (Matrix<T, N, N>, Matrix<T, N, N>, usize) {
+        let mut l = Matrix::from([[T::zero(); N]; N]);
+        let mut u = self.clone();
+        let mut permutation_count = 0;
+    
+        for i in 0..N {
+            // Pivoting (partial pivoting)
+            let mut max_row = i;
+            for k in i + 1..N {
+                if u[k][i].abs() > u[max_row][i].abs() {
+                    max_row = k;
+                }
+            }
+
+            if max_row != i {
+                u.data.swap(i, max_row);
+                permutation_count += 1;
+            }
+    
+            // Compute L and U
+            for j in i..N {
+                l[j][i] = u[j][i] / u[i][i];
+            }
+
+            for j in i + 1..N {
+                for k in i..N {
+                    u[j][k] = u[j][k] - l[j][i] * u[i][k];
+                }
+            }
+        }
+    
+        // Set diagonal of L to 1
+        for i in 0..N {
+            l[i][i] = T::one();
+        }
+    
+        (l, u, permutation_count)
+    }
+    
+    // Function to compute the determinant using LU Decomposition
+    pub fn determinant(&self) -> T {
+        let (l, u, permutation_count) = self.lu_decomposition();
+        let mut determinant = T::one();
+    
+        // Product of diagonal elements of U
+        for i in 0..N {
+            determinant = determinant * u.data[i][i];
+        }
+    
+        // Adjust for row swaps
+        if permutation_count % 2 != 0 {
+            determinant = -determinant;
+        }
+    
+        determinant
+    }
+    
+    // Function to compute the inverse using LU Decomposition
+    pub fn inverse(&self) -> Option<Matrix<T, N, N>> {
+        let det = self.determinant();
+        if det == T::zero() {
+            return None;
+        }
+
+        let (l, u, _) = self.lu_decomposition();
+        let mut inverse = [[T::zero(); N]; N];
+    
+        // Solve for each column of the identity matrix
+        for i in 0..N {
+            let mut b = [T::zero(); N];
+            b[i] = T::one();
+    
+            // Solve L * y = b using forward substitution
+            let mut y = [T::zero(); N];
+            for j in 0..N {
+                y[j] = b[j];
+                for k in 0..j {
+                    y[j] = y[j] - l[j][k] * y[k];
+                }
+            }
+    
+            // Solve U * x = y using backward substitution
+            let mut x = [T::zero(); N];
+            for j in (0..N).rev() {
+                x[j] = y[j] / u[j][j];
+                for k in (j + 1..N).rev() {
+                    x[j] = x[j] - u[j][k] * x[k] / u[j][j];
+                }
+            }
+    
+            // Assign the solution to the inverse matrix
+            for j in 0..N {
+                inverse[j][i] = x[j];
+            }
+        }
+    
+        Some(Matrix {
+            data: inverse
+        })
+    }
+}
+
+pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
+    let mut projection_matrix = Matrix::from([[0.; 4]; 4]);
+
+    let fov_factor = 1. / (fov / 2.).tan();
+
+    projection_matrix[0][0] = fov_factor / ratio;
+    projection_matrix[1][1] = fov_factor;
+    projection_matrix[2][2] = (far + near) / (near - far);
+    projection_matrix[2][3] = (2. * far * near) / (near - far);
+    projection_matrix[3][2] = -1.;
+
+    // Transpose for column major order
+    projection_matrix.transpose()
+}
