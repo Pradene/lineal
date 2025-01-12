@@ -1,13 +1,12 @@
+use crate::vector::Vector;
+
+use num::Signed;
 use std::ops::{
-    Neg, 
-    Add, AddAssign,
-    Sub, SubAssign,
-    Mul, MulAssign,
+    Add,
+    Sub,
+    Mul,
     Index, IndexMut
 };
-use num::Signed;
-
-use crate::vector::Vector;
 
 #[derive(Debug, Clone)]
 pub struct Matrix<T, const M: usize, const N: usize> {
@@ -15,7 +14,7 @@ pub struct Matrix<T, const M: usize, const N: usize> {
 }
 
 impl<T, const M: usize, const N: usize> Matrix<T, M, N> {
-    fn new(data: [[T; N]; M]) -> Self {
+    pub fn new(data: [[T; N]; M]) -> Self {
         Self {
             data: data
         }
@@ -60,7 +59,7 @@ where T:
 {
     type Output = Self;
 
-    fn add(self, m: Self) -> Self {
+    fn add(self, m: Self) -> Self::Output {
         let mut result = self.clone();
         for i in 0..M {
             for j in 0..N {
@@ -79,7 +78,7 @@ where T:
 {
     type Output = Self;
 
-    fn sub(self, m: Self) -> Self {
+    fn sub(self, m: Self) -> Self::Output {
         let mut result = self.clone();
         for i in 0..M {
             for j in 0..N {
@@ -91,12 +90,14 @@ where T:
     }
 }
 
-impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+impl<T, const M: usize, const N: usize> Mul<T> for Matrix<T, M, N>
 where T:
     Mul<Output = T> +
     Copy
 {
-    fn scl(&self, scalar: T) -> Self {
+    type Output = Self;
+
+    fn mul(self, scalar: T) -> Self {
         let mut result = self.clone();
         for i in 0..M {
             for j in 0..N {
@@ -108,7 +109,8 @@ where T:
     }
 }
 
-impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+
+impl<T, const M: usize, const N: usize, const P: usize> Mul<Matrix<T, N, P>> for Matrix<T, M, N>
 where
 T:
     Copy +
@@ -116,8 +118,10 @@ T:
     Add<Output = T> +
     Default
 {
+    type Output = Matrix<T, M, P>;
+
     // Matrix multiplication: self (M x N) * matrix (N x P) -> result (M x P)
-    fn mul_mat<const P: usize>(&self, matrix: &Matrix<T, N, P>) -> Matrix<T, M, P> {
+    fn mul(self, matrix: Matrix<T, N, P>) -> Self::Output {
         let mut result = Matrix {
             data: [[T::default(); P]; M],
         };
@@ -134,14 +138,16 @@ T:
     }
 }
 
-impl<T, const M: usize, const N: usize> Matrix<T, M, N>
+impl<T, const M: usize, const N: usize> Mul<Vector<T, N>> for Matrix<T, M, N>
 where T:
     Copy +
     Default +
     Mul<Output = T> +
     Add<Output = T>
 {
-    fn mul_vec(&mut self, vector: &Vector<T, N>) -> Vector<T, M> {
+    type Output = Vector<T, M>;
+
+    fn mul(self, vector: Vector<T, N>) -> Self::Output {
         let mut result = Vector {
             data: [T::default(); M]
         };
@@ -153,6 +159,16 @@ where T:
         }
 
         result
+    }
+}
+
+impl<T, const M: usize, const N: usize> PartialEq for Matrix<T, M, N>
+where 
+T:
+    PartialEq
+{
+    fn eq(&self, matrix: &Self) -> bool {
+        self.data == matrix.data
     }
 }
 
@@ -198,7 +214,6 @@ impl<T, const M: usize, const N: usize> Matrix<T, M, N>
 where T:
     Copy +
     Signed +
-    SubAssign +
     PartialOrd
 {
     pub fn row_echelon(&self) -> Matrix<T, M, N> {
@@ -275,7 +290,6 @@ where T:
     Copy +
     Signed +
     PartialOrd +
-    SubAssign +
     Into<f32>
 {
     fn lu_decomposition(&self) -> (Matrix<T, N, N>, Matrix<T, N, N>, usize) {
@@ -324,7 +338,7 @@ where T:
     
         // Product of diagonal elements of U
         for i in 0..N {
-            determinant = determinant * u.data[i][i];
+            determinant = determinant * u[i][i];
         }
     
         // Adjust for row swaps

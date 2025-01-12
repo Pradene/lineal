@@ -1,11 +1,12 @@
+use num::Signed;
 use std::ops::{
     Neg, 
-    Add, AddAssign,
-    Sub, SubAssign,
-    Mul, MulAssign,
-    Index, IndexMut
+    Add,
+    Sub,
+    Mul,
+    Index,
+    IndexMut
 };
-use num::Signed;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vector<T, const N: usize> {
@@ -109,17 +110,6 @@ where T:
 
 impl<T, const N: usize> Vector<T, N>
 where
-T:
-    Mul<Output = T> +
-    Copy
-{
-    pub fn scl(self, scalar: T) -> Self {
-        self * scalar
-    }
-}
-
-impl<T, const N: usize> Vector<T, N>
-where
 T: 
     Mul<Output = T> +
     Add<Output = T> +
@@ -127,10 +117,10 @@ T:
     Into<f32> +
     Default
 {
-    pub fn dot(&self, v: Vector<T, N>) -> f32 {
+    pub fn dot(&self, vector: Vector<T, N>) -> f32 {
         self.data
             .iter()
-            .zip(v.data.iter())
+            .zip(vector.data.iter())
             .fold(0., |sum, (&x, &y)| sum + x.into() * y.into())
     }
 }
