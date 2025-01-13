@@ -127,40 +127,12 @@ T:
     Into<f32> +
     Default
 {
-    pub fn dot(&self, vector: Vector<T, N>) -> f32 {
+    pub fn dot(&self, vector: &Vector<T, N>) -> f32 {
         self.data
             .iter()
             .zip(vector.data.iter())
             .fold(0., |sum, (&x, &y)| sum + x.into() * y.into())
     }
-}
-
-pub fn linear_combination<T, const N: usize>(
-    vectors: &[Vector<T, N>],
-    scalars: &[T]
-) -> Vector<T, N>
-where
-T:
-    Add<Output = T> +
-    Mul<Output = T> +
-    Default +
-    Copy
-{
-    // Check vectors length is not equal to 0
-    assert!(!vectors.is_empty(), "Vectors is empty");
-
-    // Check if vectors length and scalars length are equal
-    assert_eq!(vectors.len(), scalars.len(), "Vectors length and scalars length must be equal");
-    
-    let mut result = [T::default(); N];
-
-    for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
-        result.iter_mut()
-            .zip(vector.data.iter())
-            .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
-    }
-
-    Vector::from(result)
 }
 
 impl<T, const N: usize> Vector<T, N>
@@ -209,40 +181,38 @@ T:
 }
 
 
-pub fn angle_cos<T, const N: usize>(
-    u: &Vector<T, N>,
-    v: &Vector<T, N>
-) -> f32
-where
-T:
+impl<T, const N: usize> Vector<T, N>
+where T:
+    Mul<Output = T> +
+    Sub<Output = T> +
     Copy +
     Default +
-    Into<f32> + 
+    Into<f32> +
     Signed
 {
-    let dot_product = u.dot(*v);
-    let u_length = u.norm();
-    let v_length = v.norm();
-    dot_product / (u_length * v_length)
+    pub fn cosine(&self, v: &Vector<T, N>) -> f32 {
+        let dot_product = self.dot(v);
+        let u_length = self.norm();
+        let v_length = v.norm();
+        dot_product / (u_length * v_length)
+    }
 }
 
-pub fn cross_product<T>(
-    u: &Vector<T, 3>,
-    v: &Vector<T, 3>
-) -> Vector<T, 3>
-where
-T:
-    Copy +
-    Default +
-    Signed +
-    Into<f32>
+impl<T, const N: usize> Vector<T, N>
+where T:
+    Mul<Output = T> +
+    Sub<Output = T> +
+    Copy
 {
-    Vector {
-        data: [
-            u[1] * v[2] - u[2] * v[1],
-            u[2] * v[0] - u[0] * v[2],
-            u[0] * v[1] - u[1] * v[0],    
-        ],
+    pub fn cross(&self, v: &Vector<T, 3>) -> Vector<T, 3>
+    {
+        Vector {
+            data: [
+                self[1] * v[2] - self[2] * v[1],
+                self[2] * v[0] - self[0] * v[2],
+                self[0] * v[1] - self[1] * v[0],    
+            ],
+        }
     }
 }
 
@@ -255,4 +225,32 @@ T:
     Copy
 {
     x + (y - x) * t
+}
+
+pub fn linear_combination<T, const N: usize>(
+    vectors: &[Vector<T, N>],
+    scalars: &[T]
+) -> Vector<T, N>
+where
+T:
+    Add<Output = T> +
+    Mul<Output = T> +
+    Default +
+    Copy
+{
+    // Check vectors length is not equal to 0
+    assert!(!vectors.is_empty(), "Vectors is empty");
+
+    // Check if vectors length and scalars length are equal
+    assert_eq!(vectors.len(), scalars.len(), "Vectors length and scalars length must be equal");
+    
+    let mut result = [T::default(); N];
+
+    for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
+        result.iter_mut()
+            .zip(vector.data.iter())
+            .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
+    }
+
+    Vector::from(result)
 }
