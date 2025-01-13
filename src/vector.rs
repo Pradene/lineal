@@ -1,4 +1,5 @@
 use num::Signed;
+use std::fmt;
 use std::ops::{
     Neg, 
     Add,
@@ -11,6 +12,25 @@ use std::ops::{
 #[derive(Debug, Clone, Copy)]
 pub struct Vector<T, const N: usize> {
     pub data: [T; N],
+}
+
+impl<T, const N: usize> fmt::Display for Vector<T, N>
+where
+T:
+    fmt::Display
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[")?;
+        
+        for i in 0..N {
+            if i != 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", self[i])?;
+        }
+        
+        write!(f, "]")
+    }
 }
 
 impl<T, const N: usize> Vector<T, N>

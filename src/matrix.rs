@@ -1,5 +1,6 @@
 use crate::vector::Vector;
 
+use std::fmt;
 use num::Signed;
 use std::ops::{
     Add,
@@ -11,6 +12,36 @@ use std::ops::{
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix<T, const M: usize, const N: usize> {
     pub data:  [[T; N]; M],
+}
+
+impl<T, const M: usize, const N: usize> fmt::Display for Matrix<T, M, N>
+where
+T:
+    fmt::Display
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[")?;
+        
+        for i in 0..M {
+            if i != 0 {
+                write!(f, ",\n")?;
+            }
+
+            for j in 0..N {
+                if j == 0 {
+                    write!(f, "[")?;
+                } else {
+                    write!(f, ", ")?;
+                }
+
+                write!(f, "{}", self[i][j])?;
+            }
+            
+            write!(f, "]");
+        }
+        
+        write!(f, "]")
+    }
 }
 
 impl<T, const M: usize, const N: usize> Matrix<T, M, N> {
