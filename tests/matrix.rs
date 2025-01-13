@@ -1,12 +1,12 @@
 use matrix::matrix::Matrix;
+use matrix::vector::Vector;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn
-    matrix_add() {
+    fn matrix_add() {
         let m1 = Matrix::from([
             [1., 2.],
             [3., 4.],
@@ -46,7 +46,7 @@ mod tests {
     }
 
     #[test]
-    fn matrix_scale() {
+    fn matrix_scl_by_2() {
         let m1 = Matrix::from([
             [10., 15.],
             [20., 25.],
@@ -61,7 +61,7 @@ mod tests {
     }
 
     #[test]
-    fn matrix_mul_identity() {
+    fn matrix_mul_2x2_by_identity() {
         let m1 = Matrix::from([
             [7., 4.],
             [-2., 2.],
@@ -78,7 +78,7 @@ mod tests {
     }
 
     #[test]
-    fn matrix_mul() {
+    fn matrix_mul_2x2_by_2x2_by_2x2() {
         let m1 = Matrix::from([
             [1., 0.],
             [0., 1.],
@@ -100,5 +100,60 @@ mod tests {
         ]);
 
         assert_eq!(result, m1 * m2 * m3);
+    }
+
+    #[test]
+    fn matrix_mul_3x2_by_2x3() {
+        let m1 = Matrix::from([
+            [1., 0.],
+            [0., 1.],
+            [0., 1.],
+        ]);
+    
+        let m2 = Matrix::from([
+            [2., 3., 5.],
+            [4., 5., 4.],
+        ]);
+
+        let result = Matrix::from([
+            [2., 3., 5.],
+            [4., 5., 4.],
+            [4., 5., 4.],
+        ]);
+
+        assert_eq!(result, m1 * m2);
+    }
+
+    #[test]
+    fn matrix_mul_by_vector() {
+        let m = Matrix::from([
+            [1., 0., 0.],
+            [0., 1., 0.],
+            [0., 0., 1.],
+        ]);
+
+        let v = Vector::from([9., 8., 7.]);
+
+        let result = v.clone();
+
+        assert_eq!(result, m * v);
+    }
+
+    #[test]
+    fn matrix_transpose() {
+        let m = Matrix::from([
+            [0., 0., 0., 0.],
+            [1., 1., 1., 1.],
+            [0., 0., 0., 0.],
+        ]);
+
+        let result = Matrix::from([
+            [0., 1., 0.],
+            [0., 1., 0.],
+            [0., 1., 0.],
+            [0., 1., 0.],
+        ]);
+
+        assert_eq!(result, m.transpose());
     }
 }

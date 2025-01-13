@@ -108,6 +108,16 @@ where T:
     }
 }
 
+impl<T, const N: usize> PartialEq for Vector<T, N>
+where 
+T:
+    PartialEq
+{
+    fn eq(&self, vector: &Self) -> bool {
+        self.data == vector.data
+    }
+}
+
 impl<T, const N: usize> Vector<T, N>
 where
 T: 

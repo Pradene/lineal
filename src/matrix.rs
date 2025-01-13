@@ -8,7 +8,7 @@ use std::ops::{
     Index, IndexMut
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Matrix<T, const M: usize, const N: usize> {
     pub data:  [[T; N]; M],
 }
