@@ -1,5 +1,4 @@
-use matrix::matrix::Matrix;
-use matrix::vector::Vector;
+use lineal::{Matrix, Vector};
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,6 @@
-use num::Signed;
 use std::fmt;
+use num::Float;
 use std::ops::{
-    Neg, 
     Add,
     Sub,
     Mul,
@@ -14,9 +13,8 @@ pub struct Vector<T, const N: usize> {
     pub data: [T; N],
 }
 
-impl<T, const N: usize> fmt::Display for Vector<T, N>
-where
-T:
+impl<T, const N: usize> fmt::Display for Vector<T, N> 
+where T:
     fmt::Display
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -33,24 +31,9 @@ T:
     }
 }
 
-impl<T, const N: usize> Vector<T, N>
-where
-T:
-    Copy +
-    Default
-{
-    fn new(data: [T; N]) -> Self {
-        Self {
-            data: data
-        }
-    }
-}
-
 impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
     fn from(data: [T; N]) -> Self {
-        Self {
-            data: data
-        }
+        Self {data}
     }
 }
 
@@ -79,8 +62,8 @@ impl<T, const N: usize> IndexMut<usize> for Vector<T, N> {
 
 impl<T, const N: usize> Add for Vector<T, N>
 where T:
-    Add<Output = T> +
-    Copy
+    Copy +
+    Add<Output = T>
 {
     type Output = Self;
 
@@ -96,8 +79,8 @@ where T:
 
 impl<T, const N: usize> Sub for Vector<T, N>
 where T:
-    Sub<Output = T> +
-    Copy
+    Copy +
+    Sub<Output = T>
 {
     type Output = Self;
 
@@ -113,8 +96,8 @@ where T:
 
 impl<T, const N: usize> Mul<T> for Vector<T, N>
 where T:
-    Mul<Output = T> +
-    Copy
+    Copy +
+    Mul<Output = T>
 {
     type Output = Self;
 
@@ -129,8 +112,7 @@ where T:
 }
 
 impl<T, const N: usize> PartialEq for Vector<T, N>
-where 
-T:
+where T:
     PartialEq
 {
     fn eq(&self, vector: &Self) -> bool {
@@ -138,79 +120,46 @@ T:
     }
 }
 
+impl<T, const N: usize> Vector<T, N> {
+    pub fn new(data: [T; N]) -> Self {
+        Self {data}
+    }
+}
+
 impl<T, const N: usize> Vector<T, N>
 where
-T: 
-    Mul<Output = T> +
-    Add<Output = T> +
-    Copy + 
-    Into<f32> +
-    Default
+T:
+    Float
 {
-    pub fn dot(&self, vector: &Vector<T, N>) -> f32 {
+    pub fn dot(&self, vector: &Vector<T, N>) -> T {
         self.data
             .iter()
             .zip(vector.data.iter())
-            .fold(0., |sum, (&x, &y)| sum + x.into() * y.into())
+            .fold(T::zero(), |sum, (&x, &y)| sum + x * y)
     }
-}
 
-impl<T, const N: usize> Vector<T, N>
-where
-T:
-    Neg<Output = T> +
-    Copy + 
-    Signed +
-    Into<f32>
-{
-    pub fn norm_1(&self) -> f32 {
+    pub fn norm_1(&self) -> T {
         self.data
             .iter()
-            .fold(0., |sum, &x| sum + x.abs().into())
+            .fold(T::zero(), |sum, &x| sum + x.abs())
     }
-}
 
-impl<T, const N: usize> Vector<T, N>
-where
-T:
-    Copy +
-    Into<f32> +
-    Signed
-{
-    pub fn norm(&self) -> f32 {
+    pub fn norm(&self) -> T {
         self.data
             .iter()
-            .fold(0., |sum, &x| sum + x.abs().into().powf(2.))
-            .powf(0.5)
+            .fold(T::zero(), |sum, &x| {
+                sum + x * x
+            })
+            .powf(T::from(0.5).unwrap())
     }
-}
 
-impl<T, const N: usize> Vector<T, N>
-where
-T:
-    Copy +
-    Into<f32> +
-    Signed +
-    PartialOrd
-{
-    pub fn norm_inf(&self) -> f32 {
+    pub fn norm_inf(&self) -> T {
         self.data
             .iter()
-            .fold(0., |sum, &x| f32::max(sum, x.abs().into()))
+            .fold(T::zero(), |sum, &x| T::max(sum, x.abs()))
     }
-}
 
-
-impl<T, const N: usize> Vector<T, N>
-where T:
-    Mul<Output = T> +
-    Sub<Output = T> +
-    Copy +
-    Default +
-    Into<f32> +
-    Signed
-{
-    pub fn cosine(&self, v: &Vector<T, N>) -> f32 {
+    pub fn cosine(&self, v: &Vector<T, N>) -> T {
         let dot_product = self.dot(v);
         let u_length = self.norm();
         let v_length = v.norm();
@@ -218,11 +167,9 @@ where T:
     }
 }
 
-impl<T, const N: usize> Vector<T, N>
+impl<T> Vector<T, 3> 
 where T:
-    Mul<Output = T> +
-    Sub<Output = T> +
-    Copy
+    Float
 {
     pub fn cross(&self, v: &Vector<T, 3>) -> Vector<T, 3>
     {
@@ -236,41 +183,26 @@ where T:
     }
 }
 
-pub fn lerp<T>(x: T, y: T, t: f32) -> T
-where
-T:
-    Add<Output = T> +
-    Sub<Output = T> +
-    Mul<f32, Output = T> +
-    Copy
-{
-    x + (y - x) * t
-}
-
-pub fn linear_combination<T, const N: usize>(
-    vectors: &[Vector<T, N>],
-    scalars: &[T]
-) -> Vector<T, N>
-where
-T:
-    Add<Output = T> +
-    Mul<Output = T> +
+pub fn linear_combination<T, const N: usize>(vectors: &[Vector<T, N>], scalars: &[T]) -> Vector<T, N>
+where T:
     Default +
-    Copy
-{
+    Copy +
+    Mul<Output = T> +
+    Add<Output = T>
+{    
     // Check vectors length is not equal to 0
     assert!(!vectors.is_empty(), "Vectors is empty");
 
     // Check if vectors length and scalars length are equal
     assert_eq!(vectors.len(), scalars.len(), "Vectors length and scalars length must be equal");
     
-    let mut result = [T::default(); N];
+    let mut result = Vector::from([T::default(); N]);
 
     for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
-        result.iter_mut()
+        result.data.iter_mut()
             .zip(vector.data.iter())
             .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
     }
 
-    Vector::from(result)
+    result
 }

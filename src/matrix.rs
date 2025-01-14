@@ -15,17 +15,14 @@ pub struct Matrix<T, const M: usize, const N: usize> {
 }
 
 impl<T, const M: usize, const N: usize> fmt::Display for Matrix<T, M, N>
-where
-T:
+where T:
     fmt::Display
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         
         for i in 0..M {
-            if i != 0 {
-                write!(f, ",\n")?;
-            }
+            write!(f, "\n ")?;
 
             for j in 0..N {
                 if j == 0 {
@@ -37,26 +34,16 @@ T:
                 write!(f, "{}", self[i][j])?;
             }
             
-            write!(f, "]");
+            write!(f, "],")?;
         }
         
-        write!(f, "]")
-    }
-}
-
-impl<T, const M: usize, const N: usize> Matrix<T, M, N> {
-    pub fn new(data: [[T; N]; M]) -> Self {
-        Self {
-            data: data
-        }
+        write!(f, "\n]")
     }
 }
 
 impl<T, const M: usize, const N: usize> From<[[T; N]; M]> for Matrix<T, M, N> {
     fn from(data: [[T; N]; M]) -> Self {
-        Self {
-            data: data
-        }
+        Self {data}
     }
 }
 
@@ -142,8 +129,7 @@ where T:
 
 
 impl<T, const M: usize, const N: usize, const P: usize> Mul<Matrix<T, N, P>> for Matrix<T, M, N>
-where
-T:
+where T:
     Copy +
     Mul<Output = T> +
     Add<Output = T> +
@@ -194,8 +180,7 @@ where T:
 }
 
 impl<T, const M: usize, const N: usize> PartialEq for Matrix<T, M, N>
-where 
-T:
+where T:
     PartialEq
 {
     fn eq(&self, matrix: &Self) -> bool {
@@ -203,12 +188,16 @@ T:
     }
 }
 
+impl<T, const M: usize, const N: usize> Matrix<T, M, N> {
+    pub fn new(data: [[T; N]; M]) -> Self {
+        Self {data}
+    }
+}
+
 impl<T, const M: usize, const N: usize> Matrix<T, M, N>
 where T:
     Copy +
     Default +
-    Mul<Output = T> +
-    Add<Output = T>
 {
     pub fn transpose(&self) -> Matrix<T, N, M> {
         let mut result = Matrix {
@@ -250,7 +239,7 @@ where T:
     pub fn row_echelon(&self) -> Matrix<T, M, N> {
         let mut result = self.clone();
         let mut pivot_row = 0;
-        
+
         for col in 0..N {
             if pivot_row >= M {
                 break;
@@ -364,7 +353,7 @@ where T:
     
     // Function to compute the determinant using LU Decomposition
     pub fn determinant(&self) -> T {
-        let (l, u, permutation_count) = self.lu_decomposition();
+        let (_, u, permutation_count) = self.lu_decomposition();
         let mut determinant = T::one();
     
         // Product of diagonal elements of U

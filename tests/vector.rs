@@ -1,8 +1,13 @@
-use matrix::vector::Vector;
+use lineal::{Vector, lerp};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn epsilon(x: f32, y: f32) -> bool{
+        let eps = 0.0000001;
+        (x - y).abs() < eps
+    }
 
     #[test]
     fn vector_add() {
@@ -77,6 +82,14 @@ mod tests {
         let v1 = Vector::from([2., 1.]);
         let v2 = Vector::from([4., 2.]);
 
-        assert_eq!(1., v1.cosine(&v2));
+        assert!(epsilon(1., v1.cosine(&v2)));
+    }
+
+    #[test]
+    fn vector_lerp() {
+        let v1 = Vector::from([2., 1.]);
+        let v2 = Vector::from([4., 2.]);
+
+        assert_eq!(v2, lerp(v1, v2, 1.));
     }
 }
