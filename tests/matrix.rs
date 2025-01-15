@@ -1,4 +1,4 @@
-use lineal::{Matrix, Vector};
+use lineal::{Matrix, Vector, lerp};
 
 #[cfg(test)]
 mod tests {
@@ -154,5 +154,95 @@ mod tests {
         ]);
 
         assert_eq!(result, m.transpose());
+    }
+
+    #[test]
+    fn matrix_trace() {
+        let m = Matrix::from([
+            [1., 4., 5.],
+            [1., 4., 5.],
+            [1., 4., 5.],
+        ]);
+
+        assert_eq!(10., m.trace());
+    }
+
+    #[test]
+    fn matrix_lerp() {
+        let m1 = Matrix::from([
+            [0., 0., 0.],
+            [0., 0., 0.],
+            [0., 0., 0.],
+        ]);
+
+        let m2 = Matrix::from([
+            [4., 2., 8.],
+            [2., 6., 0.],
+            [2., 2., 8.],
+        ]);
+
+        let result = Matrix::from([
+            [2., 1., 4.],
+            [1., 3., 0.],
+            [1., 1., 4.],
+        ]);
+
+        assert_eq!(result, lerp(m1, m2, 0.5));
+    }
+
+    #[test]
+    fn matrix_row_echelon_form() {
+        let m = Matrix::from([
+            [1., 2.],
+            [2., 4.],
+        ]);
+
+        let result = Matrix::from([
+            [1., 2.],
+            [0., 0.],
+        ]);
+
+        assert_eq!(result, m.row_echelon());
+    }
+
+    #[test]
+    fn matrix_determinant() {
+        let m = Matrix::from([
+            [ 8., 5., -2., 4.],
+            [ 4., 2.5, 20., 4.],
+            [ 8., 5., 1., 4.],
+            [28., -4., 17., 1.],
+        ]);
+
+        assert_eq!(1032., m.determinant())
+    }
+
+    #[test]
+    fn matrix_inverse() {
+        let m = Matrix::from([
+            [2., 0., 0.],
+            [0., 2., 0.],
+            [0., 0., 2.],
+        ]);
+
+        let result = Matrix::from([
+            [0.5, 0., 0.],
+            [0., 0.5, 0.],
+            [0., 0., 0.5],
+        ]);
+
+        assert_eq!(result, m.inverse().unwrap())
+    }
+
+    #[test]
+    fn matrix_rank() {
+        let m = Matrix::from([
+            [ 8., 5., -2.],
+            [ 4., 7., 20.],
+            [ 7., 6., 1.],
+            [21., 18., 7.],
+        ]);
+
+        assert_eq!(3, m.rank())
     }
 }
