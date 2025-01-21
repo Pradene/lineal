@@ -37,6 +37,22 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
     }
 }
 
+impl<T, const N: usize> TryFrom<Vec<T>> for Vector<T, N> {
+    type Error = String;
+
+    fn try_from(vec: Vec<T>) -> Result<Self, Self::Error> {
+        if vec.len() == N {
+            let data: [T; N] = vec.try_into().map_err(|_| "Incorrect length")?;
+            Ok(Self {
+                data: data,
+            })
+
+        } else {
+            Err("Vector length does not match the expected size".to_string())
+        }
+    }
+}
+
 impl<T, const N: usize> Index<usize> for Vector<T, N> {
     type Output = T;
 
