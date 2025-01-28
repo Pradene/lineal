@@ -475,3 +475,20 @@ where T:
         return result;
     }
 }
+
+impl<T, const N: usize> Matrix<T, N, N>
+where T:
+    Copy +
+    Zero +
+    One
+{
+    pub fn identity() -> Self {
+        let mut data = [[T::zero(); N]; N];
+
+        for i in 0..N {
+            data[i][i] = T::one();
+        }
+
+        return Matrix { data };
+    }
+}
