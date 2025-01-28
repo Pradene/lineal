@@ -1,7 +1,7 @@
 use crate::vector::Vector;
 
 use std::fmt;
-use num::Signed;
+use num::{One, Signed, Zero};
 use std::ops::{
     Add,
     Sub,
@@ -108,26 +108,6 @@ where T:
     }
 }
 
-impl<T, const M: usize, const N: usize> Mul<T> for Matrix<T, M, N>
-where T:
-    Mul<Output = T> +
-    Copy
-{
-    type Output = Self;
-
-    fn mul(self, scalar: T) -> Self {
-        let mut result = self.clone();
-        for i in 0..M {
-            for j in 0..N {
-                result[i][j] = result[i][j] * scalar;
-            }
-        }
-
-        result
-    }
-}
-
-
 impl<T, const M: usize, const N: usize, const P: usize> Mul<Matrix<T, N, P>> for Matrix<T, M, N>
 where T:
     Copy +
@@ -172,6 +152,25 @@ where T:
         for i in 0..M {
             for j in 0..N {
                 result[i] = result[i] + self[i][j] * vector[j];
+            }
+        }
+
+        result
+    }
+}
+
+impl<T, const M: usize, const N: usize> Mul<T> for Matrix<T, M, N>
+where T:
+    Mul<Output = T> +
+    Copy
+{
+    type Output = Self;
+
+    fn mul(self, scalar: T) -> Self {
+        let mut result = self.clone();
+        for i in 0..M {
+            for j in 0..N {
+                result[i][j] = result[i][j] * scalar;
             }
         }
 
@@ -427,4 +426,52 @@ pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4
 
     // Transpose for column major order
     projection_matrix.transpose()
+}
+
+impl<T> Matrix<T, 4, 4>
+where T:
+    Default +
+    Copy +
+    Add<Output = T> +
+    Sub<Output = T> +
+    Mul<Output = T> +
+    Zero +
+    One +
+    From<f32>
+{
+    pub fn rotate(&mut self, angle: f32, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
+        let c = T::from(angle.cos());
+        let s = T::from(angle.sin());
+        let one_minus_c = T::one() - c;
+        let [x, y, z] = axis.data;
+
+        // Rotation matrix components
+        let rotation_matrix = Matrix {
+            data: [
+                [
+                    x * x * one_minus_c + c,
+                    x * y * one_minus_c - z * s,
+                    x * z * one_minus_c + y * s,
+                    T::zero(),
+                ],
+                [
+                    y * x * one_minus_c + z * s,
+                    y * y * one_minus_c + c,
+                    y * z * one_minus_c - x * s,
+                    T::zero(),
+                ],
+                [
+                    z * x * one_minus_c - y * s,
+                    z * y * one_minus_c + x * s,
+                    z * z * one_minus_c + c,
+                    T::zero(),
+                ],
+                [T::zero(), T::zero(), T::zero(), T::one()],
+            ],
+        };
+
+        // Update the current matrix by multiplying it with the rotation matrix
+        let result = *self * rotation_matrix;
+        return result;
+    }
 }

@@ -1,4 +1,5 @@
 use std::fmt;
+use std::convert::{From, TryFrom};
 use num::Float;
 use std::ops::{
     Add,
@@ -33,7 +34,7 @@ where T:
 
 impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
     fn from(data: [T; N]) -> Self {
-        Self {data}
+        Self { data }
     }
 }
 
@@ -43,9 +44,7 @@ impl<T, const N: usize> TryFrom<Vec<T>> for Vector<T, N> {
     fn try_from(vec: Vec<T>) -> Result<Self, Self::Error> {
         if vec.len() == N {
             let data: [T; N] = vec.try_into().map_err(|_| "Incorrect length")?;
-            Ok(Self {
-                data: data,
-            })
+            Ok(Self { data })
 
         } else {
             Err("Vector length does not match the expected size".to_string())
