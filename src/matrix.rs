@@ -413,21 +413,6 @@ where T:
     }
 }
 
-pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
-    let mut projection_matrix = Matrix::from([[0.; 4]; 4]);
-
-    let fov_factor = 1. / (fov / 2.).tan();
-
-    projection_matrix[0][0] = fov_factor / ratio;
-    projection_matrix[1][1] = fov_factor;
-    projection_matrix[2][2] = (far + near) / (near - far);
-    projection_matrix[2][3] = (2. * far * near) / (near - far);
-    projection_matrix[3][2] = -1.;
-
-    // Transpose for column major order
-    projection_matrix.transpose()
-}
-
 impl<T> Matrix<T, 4, 4>
 where T:
     Default +
@@ -439,6 +424,21 @@ where T:
     One +
     From<f32>
 {
+    pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
+        let mut projection_matrix = Matrix::from([[0.; 4]; 4]);
+    
+        let fov_factor = 1. / (fov / 2.).tan();
+    
+        projection_matrix[0][0] = fov_factor / ratio;
+        projection_matrix[1][1] = fov_factor;
+        projection_matrix[2][2] = (far + near) / (near - far);
+        projection_matrix[2][3] = (2. * far * near) / (near - far);
+        projection_matrix[3][2] = -1.;
+    
+        // Transpose for column major order
+        projection_matrix.transpose()
+    }
+
     pub fn rotate(&mut self, angle: f32, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
         let c = T::from(angle.cos());
         let s = T::from(angle.sin());
