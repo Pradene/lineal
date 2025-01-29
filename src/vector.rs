@@ -1,6 +1,7 @@
 use std::fmt;
 use std::convert::{From, TryFrom};
-use num::Float;
+use std::process::Output;
+use num::{Float, Zero};
 use std::ops::{
     Add,
     Sub,
@@ -194,6 +195,33 @@ where T:
                 self[2] * v[0] - self[0] * v[2],
                 self[0] * v[1] - self[1] * v[0],    
             ],
+        }
+    }
+}
+
+impl<T> Vector<T, 3>
+where T:
+    Copy +
+    Mul<Output = T> +
+    Add<Output = T> +
+    Zero +
+    Float
+{
+    fn length(&self) -> T {
+        (self[0] * self[0] + self[1] * self[1] + self[2] * self[2]).powf(T::from(0.5).unwrap())
+    }
+
+    // Normalize the vector
+    pub fn normalize(&self) -> Vector<T, 3> {
+        let len = self.length();
+        if len > T::zero() {
+            return Vector::new([
+                self[0] / len,
+                self[1] / len,
+                self[2] / len,
+            ]);
+        } else {
+            return Vector::new([T::zero(), T::zero(), T::zero()]); // Return zero vector if length is zero
         }
     }
 }
