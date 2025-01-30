@@ -1,10 +1,10 @@
-use lineal::{Vector, lerp, linear_combination};
+use lineal::{lerp, linear_combination, Vector};
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn epsilon(x: f32, y: f32) -> bool{
+    fn epsilon(x: f32, y: f32) -> bool {
         let eps = 0.0000001;
         (x - y).abs() < eps
     }
@@ -13,9 +13,9 @@ mod tests {
     fn test_vector_add() {
         let v1 = Vector::from([1., 1., 1.]);
         let v2 = Vector::from([2., 2., 2.]);
-        
+
         let result = Vector::from([3., 3., 3.]);
-    
+
         assert_eq!(result, v1 + v2);
     }
 
@@ -23,9 +23,9 @@ mod tests {
     fn test_vector_sub() {
         let v1 = Vector::from([2., 2., 2.]);
         let v2 = Vector::from([1., 1., 1.]);
-        
+
         let result = v2.clone();
-    
+
         assert_eq!(result, v1 - v2);
     }
 
@@ -98,9 +98,9 @@ mod tests {
         let v1 = Vector::from([1., 0., 0.]);
         let v2 = Vector::from([0., 1., 0.]);
         let v3 = Vector::from([0., 0., 1.]);
-        
+
         let result = Vector::from([10., -2., 0.5]);
-    
-        assert_eq!(result, linear_combination(&[v1, v2, v3], &[10., -2., 0.5]))        
+
+        assert_eq!(result, linear_combination(&[v1, v2, v3], &[10., -2., 0.5]))
     }
 }

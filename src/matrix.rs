@@ -425,63 +425,62 @@ where
         let right = up.cross(&forward).normalize();
         let up = forward.cross(&right);
 
-        return Matrix::from_row([
-            [right[0], up[0], -forward[0], T::zero()],
-            [right[1], up[1], -forward[1], T::zero()],
-            [right[2], up[2], -forward[2], T::zero()],
+        return Matrix::from_col([
+            [right[0], right[1], right[2], -position.dot(&right)],
+            [up[0], up[1], up[2], -position.dot(&up)],
             [
-                -position.dot(&right),
-                -position.dot(&up),
+                -forward[0],
+                -forward[1],
+                -forward[2],
                 -position.dot(&forward),
-                T::one(),
             ],
+            [T::zero(), T::zero(), T::zero(), T::one()],
         ]);
     }
 
     pub fn projection(fov: T, ratio: T, near: T, far: T) -> Matrix<T, 4, 4> {
-        let mut matrix = Matrix::from_row([[T::zero(); 4]; 4]);
-
         let fov_factor = T::from(1.).unwrap() / (fov / T::from(2.).unwrap()).tan();
 
-        matrix[0][0] = fov_factor / ratio;
-        matrix[1][1] = fov_factor;
-        matrix[2][2] = (far + near) / (near - far);
-        matrix[2][3] = (T::from(2.).unwrap() * far * near) / (near - far);
-        matrix[3][2] = T::from(-1.).unwrap();
-
-        return matrix;
+        return Matrix::from_col([
+            [fov_factor / ratio, T::zero(), T::zero(), T::zero()],
+            [T::zero(), fov_factor, T::zero(), T::zero()],
+            [
+                T::zero(),
+                T::zero(),
+                (far + near) / (near - far),
+                (T::from(2.).unwrap() * far * near) / (near - far),
+            ],
+            [T::zero(), T::zero(), T::from(-1.).unwrap(), T::zero()],
+        ]);
     }
 
     pub fn rotate(&mut self, angle: f32, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
         let c = T::from(angle.cos()).unwrap();
         let s = T::from(angle.sin()).unwrap();
-        let one_minus_c = T::one() - c;
         let [x, y, z] = axis.data;
 
         // Rotation matrix components
-        let rotation_matrix = Matrix {
-            data: [
-                [
-                    x * x * one_minus_c + c,
-                    x * y * one_minus_c - z * s,
-                    x * z * one_minus_c + y * s,
-                    T::zero(),
-                ],
-                [
-                    y * x * one_minus_c + z * s,
-                    y * y * one_minus_c + c,
-                    y * z * one_minus_c - x * s,
-                    T::zero(),
-                ],
-                [
-                    z * x * one_minus_c - y * s,
-                    z * y * one_minus_c + x * s,
-                    z * z * one_minus_c + c,
-                    T::zero(),
-                ],
-                [T::zero(), T::zero(), T::zero(), T::one()],
+        let rotation_matrix = Matrix::from_col([
+            [
+                x * x * (T::one() - c) + c,
+                x * y * (T::one() - c) - z * s,
+                x * z * (T::one() - c) + y * s,
+                T::zero(),
             ],
-        };
+            [
+                y * x * (T::one() - c) + z * s,
+                y * y * (T::one() - c) + c,
+                y * z * (T::one() - c) - x * s,
+                T::zero(),
+            ],
+            [
+                z * x * (T::one() - c) - y * s,
+                z * y * (T::one() - c) + x * s,
+                z * z * (T::one() - c) + c,
+                T::zero(),
+            ],
+            [T::zero(), T::zero(), T::zero(), T::one()],
+        ]);
 
         return *self * rotation_matrix;
     }
@@ -498,6 +497,6 @@ where
             data[i][i] = T::one();
         }
 
-        return Matrix { data };
+        return Matrix::from_row(data);
     }
 }
