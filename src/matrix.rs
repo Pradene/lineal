@@ -412,80 +412,6 @@ where
     }
 }
 
-impl<T> Matrix<T, 4, 4>
-where
-    T: Float,
-{
-    pub fn look_at(
-        position: Vector<T, 3>,
-        target: Vector<T, 3>,
-        up: Vector<T, 3>,
-    ) -> Matrix<T, 4, 4> {
-        let forward = (target - position).normalize();
-        let right = up.cross(&forward).normalize();
-        let up = forward.cross(&right);
-
-        return Matrix::from_col([
-            [right[0], right[1], right[2], -position.dot(&right)],
-            [up[0], up[1], up[2], -position.dot(&up)],
-            [
-                -forward[0],
-                -forward[1],
-                -forward[2],
-                -position.dot(&forward),
-            ],
-            [T::zero(), T::zero(), T::zero(), T::one()],
-        ]);
-    }
-
-    pub fn projection(fov: T, ratio: T, near: T, far: T) -> Matrix<T, 4, 4> {
-        let fov_factor = T::from(1.).unwrap() / (fov / T::from(2.).unwrap()).tan();
-
-        return Matrix::from_col([
-            [fov_factor / ratio, T::zero(), T::zero(), T::zero()],
-            [T::zero(), fov_factor, T::zero(), T::zero()],
-            [
-                T::zero(),
-                T::zero(),
-                (far + near) / (near - far),
-                (T::from(2.).unwrap() * far * near) / (near - far),
-            ],
-            [T::zero(), T::zero(), T::from(-1.).unwrap(), T::zero()],
-        ]);
-    }
-
-    pub fn rotate(&mut self, angle: f32, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
-        let c = T::from(angle.cos()).unwrap();
-        let s = T::from(angle.sin()).unwrap();
-        let [x, y, z] = axis.data;
-
-        // Rotation matrix components
-        let rotation_matrix = Matrix::from_col([
-            [
-                x * x * (T::one() - c) + c,
-                x * y * (T::one() - c) - z * s,
-                x * z * (T::one() - c) + y * s,
-                T::zero(),
-            ],
-            [
-                y * x * (T::one() - c) + z * s,
-                y * y * (T::one() - c) + c,
-                y * z * (T::one() - c) - x * s,
-                T::zero(),
-            ],
-            [
-                z * x * (T::one() - c) - y * s,
-                z * y * (T::one() - c) + x * s,
-                z * z * (T::one() - c) + c,
-                T::zero(),
-            ],
-            [T::zero(), T::zero(), T::zero(), T::one()],
-        ]);
-
-        return *self * rotation_matrix;
-    }
-}
-
 impl<T, const C: usize> Matrix<T, C, C>
 where
     T: Float,
@@ -499,4 +425,71 @@ where
 
         return Matrix::from_row(data);
     }
+}
+
+pub fn look_at(
+    position: Vector<f32, 3>,
+    target: Vector<f32, 3>,
+    up: Vector<f32, 3>,
+) -> Matrix<f32, 4, 4> {
+    let forward = (position - target).normalize();
+    let right = up.cross(&forward).normalize();
+    let up = forward.cross(&right);
+
+    return Matrix::from_col([
+        // First 3 columns contain basis vectors
+        [right[0], up[0], forward[0], 0.],
+        [right[1], up[1], forward[1], 0.],
+        [right[2], up[2], forward[2], 0.],
+        // Fourth column contains translation
+        [
+            -position.dot(&right),
+            -position.dot(&up),
+            -position.dot(&forward), // RH system uses positive Z forward
+            1.,
+        ],
+    ]);
+}
+
+pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
+    let tan_half_fov = (fov / 2.0).tan();
+    let fov_factor = 1. / tan_half_fov;
+    let range = near - far;
+
+    Matrix::from_col([
+        [fov_factor / ratio, 0., 0., 0.],
+        [0., fov_factor, 0., 0.], // Negate for Vulkan-style Y-axis
+        [0., 0., far / range, -1.],
+        [0., 0., (far * near) / range, 0.],
+    ])
+}
+
+pub fn rotate(matrix: Matrix<f32, 4, 4>, angle: f32, axis: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
+    let c = angle.cos();
+    let s = angle.sin();
+    let [x, y, z] = axis.normalize().data;
+
+    let rotation=  Matrix::from_col([
+        [
+            x * x * (1. - c) + c,
+            y * x * (1. - c) + z * s,
+            z * x * (1. - c) - y * s,
+            0.,
+        ],
+        [
+            x * y * (1. - c) - z * s,
+            y * y * (1. - c) + c,
+            z * y * (1. - c) + x * s,
+            0.,
+        ],
+        [
+            x * z * (1. - c) + y * s,
+            y * z * (1. - c) - x * s,
+            z * z * (1. - c) + c,
+            0.,
+        ],
+        [0., 0., 0., 1.],
+    ]);
+
+    return rotation * matrix;
 }

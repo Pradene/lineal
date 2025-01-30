@@ -1,7 +1,7 @@
 pub use lerp::lerp;
-pub use matrix::Matrix;
+pub use matrix::{Matrix, look_at, rotate, projection};
 pub use radian::radian;
-pub use vector::{linear_combination, Vector};
+pub use vector::{Vector, linear_combination};
 
 pub mod lerp;
 pub mod matrix;
