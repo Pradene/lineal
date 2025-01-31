@@ -2,7 +2,7 @@ use crate::vector::Vector;
 
 use num::Float;
 use std::fmt;
-use std::ops::{Add, Index, IndexMut, Mul, Sub};
+use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix<T, const R: usize, const C: usize> {
@@ -87,15 +87,28 @@ where
 {
     type Output = Self;
 
-    fn add(self, m: Self) -> Self::Output {
+    fn add(self, rhs: Self) -> Self::Output {
         let mut result = self.clone();
         for r in 0..R {
             for c in 0..C {
-                result[c][r] = result[c][r] + m[c][r];
+                result[c][r] = result[c][r] + rhs[c][r];
             }
         }
 
         return result;
+    }
+}
+
+impl<T, const R: usize, const C: usize> AddAssign for Matrix<T, R, C>
+where
+    T: Float,
+{
+    fn add_assign(&mut self, rhs: Self) {
+        for r in 0..R {
+            for c in 0..C {
+                self[c][r] = self[c][r] + rhs[c][r];
+            }
+        }
     }
 }
 
@@ -105,15 +118,28 @@ where
 {
     type Output = Self;
 
-    fn sub(self, m: Self) -> Self::Output {
+    fn sub(self, rhs: Self) -> Self::Output {
         let mut result = self.clone();
         for r in 0..R {
             for c in 0..C {
-                result[c][r] = result[c][r] - m[c][r];
+                result[c][r] = result[c][r] - rhs[c][r];
             }
         }
 
         return result;
+    }
+}
+
+impl<T, const R: usize, const C: usize> SubAssign for Matrix<T, R, C>
+where
+    T: Float,
+{
+    fn sub_assign(&mut self, rhs: Self) {
+        for r in 0..R {
+            for c in 0..C {
+                self[c][r] = self[c][r] - rhs[c][r];
+            }
+        }
     }
 }
 
@@ -124,7 +150,7 @@ where
     type Output = Matrix<T, R, P>;
 
     // Matrix multiplication: self (R x C) * matrix (C x P) -> result (R x P)
-    fn mul(self, matrix: Matrix<T, C, P>) -> Self::Output {
+    fn mul(self, rhs: Matrix<T, C, P>) -> Self::Output {
         let mut result = Matrix {
             data: [[T::zero(); R]; P],
         };
@@ -133,7 +159,7 @@ where
             for r in 0..R {
                 let mut sum = T::zero();
                 for c in 0..C {
-                    sum = sum + self[c][r] * matrix[p][c];
+                    sum = sum + self[c][r] * rhs[p][c];
                 }
                 result[p][r] = sum;
             }
@@ -143,20 +169,37 @@ where
     }
 }
 
+impl<T, const R: usize, const C: usize, const P: usize> MulAssign<Matrix<T, C, P>> for Matrix<T, R, C>
+where
+    T: Float,
+{
+    fn mul_assign(&mut self, rhs: Matrix<T, C, P>) {
+        for p in 0..P {
+            for r in 0..R {
+                let mut sum = T::zero();
+                for c in 0..C {
+                    sum = sum + self[c][r] * rhs[p][c];
+                }
+                self[p][r] = sum;
+            }
+        }
+    }
+}
+
 impl<T, const R: usize, const C: usize> Mul<Vector<T, C>> for Matrix<T, R, C>
 where
     T: Float,
 {
     type Output = Vector<T, R>;
 
-    fn mul(self, vector: Vector<T, C>) -> Self::Output {
+    fn mul(self, rhs: Vector<T, C>) -> Self::Output {
         let mut result = Vector {
             data: [T::zero(); R],
         };
 
         for r in 0..R {
             for c in 0..C {
-                result[r] = result[r] + self[r][c] * vector[c];
+                result[r] = result[r] + self[r][c] * rhs[c];
             }
         }
 
@@ -170,15 +213,28 @@ where
 {
     type Output = Self;
 
-    fn mul(self, scalar: T) -> Self {
+    fn mul(self, rhs: T) -> Self {
         let mut result = self.clone();
         for r in 0..R {
             for c in 0..C {
-                result[r][c] = result[r][c] * scalar;
+                result[r][c] = result[r][c] * rhs;
             }
         }
 
         return result;
+    }
+}
+
+impl<T, const R: usize, const C: usize> MulAssign<T> for Matrix<T, R, C>
+where
+    T: Float,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        for r in 0..R {
+            for c in 0..C {
+                self[r][c] = self[r][c] * rhs;
+            }
+        }
     }
 }
 
@@ -208,23 +264,9 @@ where
     }
 }
 
-impl<T, const S: usize> Matrix<T, S, S>
-where
-    T: Float,
-{
-    pub fn trace(&self) -> T {
-        let mut result = T::zero();
-        for i in 0..S {
-            result = result + self[i][i]
-        }
-
-        return result;
-    }
-}
-
 impl<T, const R: usize, const C: usize> Matrix<T, R, C>
 where
-    T: Float + Default + PartialOrd,
+    T: Float,
 {
     pub fn row_echelon(&self) -> Matrix<T, R, C> {
         let mut result = *self;
@@ -410,20 +452,24 @@ where
 
         return Some(Matrix { data: inverse });
     }
-}
 
-impl<T, const C: usize> Matrix<T, C, C>
-where
-    T: Float,
-{
     pub fn identity() -> Self {
-        let mut data = [[T::zero(); C]; C];
+        let mut data = [[T::zero(); S]; S];
 
-        for i in 0..C {
+        for i in 0..S {
             data[i][i] = T::one();
         }
 
         return Matrix::from_row(data);
+    }
+    
+    pub fn trace(&self) -> T {
+        let mut result = T::zero();
+        for i in 0..S {
+            result = result + self[i][i]
+        }
+
+        return result;
     }
 }
 

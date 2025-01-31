@@ -1,7 +1,7 @@
 use num::Float;
 use std::convert::{From, TryFrom};
 use std::fmt;
-use std::ops::{Add, Index, IndexMut, Mul, Sub};
+use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vector<T, const N: usize> {
@@ -79,13 +79,24 @@ where
 {
     type Output = Self;
 
-    fn add(self, v: Self) -> Self {
+    fn add(self, rhs: Self) -> Self {
         let mut result = self.clone();
         for i in 0..N {
-            result[i] = result[i] + v[i];
+            result[i] = result[i] + rhs[i];
         }
 
-        result
+        return result;
+    }
+}
+
+impl<T, const N: usize> AddAssign for Vector<T, N>
+where
+    T: Float,
+{
+    fn add_assign(&mut self, rhs: Self) {
+        for i in 0..N {
+            self[i] = self[i] + rhs[i];
+        }
     }
 }
 
@@ -95,13 +106,24 @@ where
 {
     type Output = Self;
 
-    fn sub(self, v: Self) -> Self {
+    fn sub(self, rhs: Self) -> Self {
         let mut result = self.clone();
         for i in 0..N {
-            result[i] = result[i] - v[i];
+            result[i] = result[i] - rhs[i];
         }
 
-        result
+        return result;
+    }
+}
+
+impl<T, const N: usize> SubAssign for Vector<T, N>
+where
+    T: Float,
+{
+    fn sub_assign(&mut self, rhs: Self) {
+        for i in 0..N {
+            self[i] = self[i] - rhs[i];
+        }
     }
 }
 
@@ -117,7 +139,18 @@ where
             result[i] = result[i] * scalar;
         }
 
-        result
+        return result;
+    }
+}
+
+impl<T, const N: usize> MulAssign<T> for Vector<T, N>
+where
+    T: Float,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        for i in 0..N {
+            self[i] = self[i] * rhs;
+        }
     }
 }
 
