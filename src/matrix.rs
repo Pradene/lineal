@@ -169,7 +169,8 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize, const P: usize> MulAssign<Matrix<T, C, P>> for Matrix<T, R, C>
+impl<T, const R: usize, const C: usize, const P: usize> MulAssign<Matrix<T, C, P>>
+    for Matrix<T, R, C>
 where
     T: Float,
 {
@@ -462,7 +463,7 @@ where
 
         return Matrix::from_row(data);
     }
-    
+
     pub fn trace(&self) -> T {
         let mut result = T::zero();
         for i in 0..S {
@@ -510,32 +511,48 @@ pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4
     ])
 }
 
-pub fn rotate(matrix: Matrix<f32, 4, 4>, angle: f32, axis: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
-    let c = angle.cos();
-    let s = angle.sin();
-    let [x, y, z] = axis.normalize().data;
+impl<T> Matrix<T, 4, 4>
+where
+    T: Float,
+{
+    pub fn translate(&self, position: Vector<T, 3>) -> Matrix<T, 4, 4> {
+        let translation = Matrix::from_col([
+            [T::one(), T::zero(), T::zero(), T::zero()],
+            [T::zero(), T::one(), T::zero(), T::zero()],
+            [T::zero(), T::zero(), T::one(), T::zero()],
+            [position[0], position[1], position[2], T::one()],
+        ]);
 
-    let rotation=  Matrix::from_col([
-        [
-            x * x * (1. - c) + c,
-            y * x * (1. - c) + z * s,
-            z * x * (1. - c) - y * s,
-            0.,
-        ],
-        [
-            x * y * (1. - c) - z * s,
-            y * y * (1. - c) + c,
-            z * y * (1. - c) + x * s,
-            0.,
-        ],
-        [
-            x * z * (1. - c) + y * s,
-            y * z * (1. - c) - x * s,
-            z * z * (1. - c) + c,
-            0.,
-        ],
-        [0., 0., 0., 1.],
-    ]);
+        return translation * *self;
+    }
 
-    return rotation * matrix;
+    pub fn rotate(&self, angle: T, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
+        let c = angle.cos();
+        let s = angle.sin();
+        let [x, y, z] = axis.normalize().data;
+
+        let rotation = Matrix::from_col([
+            [
+                x * x * (T::one() - c) + c,
+                y * x * (T::one() - c) + z * s,
+                z * x * (T::one() - c) - y * s,
+                T::zero(),
+            ],
+            [
+                x * y * (T::one() - c) - z * s,
+                y * y * (T::one() - c) + c,
+                z * y * (T::one() - c) + x * s,
+                T::zero(),
+            ],
+            [
+                x * z * (T::one() - c) + y * s,
+                y * z * (T::one() - c) - x * s,
+                z * z * (T::one() - c) + c,
+                T::zero(),
+            ],
+            [T::zero(), T::zero(), T::zero(), T::one()],
+        ]);
+
+        return rotation * *self;
+    }
 }
