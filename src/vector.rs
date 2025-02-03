@@ -1,7 +1,7 @@
 use num::Float;
 use std::convert::{From, TryFrom};
 use std::fmt;
-use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vector<T, const N: usize> {
@@ -150,6 +150,33 @@ where
     fn mul_assign(&mut self, rhs: T) {
         for i in 0..N {
             self[i] = self[i] * rhs;
+        }
+    }
+}
+
+impl<T, const N: usize> Div<T> for Vector<T, N>
+where
+    T: Float,
+{
+    type Output = Self;
+
+    fn div(self, rhs: T) -> Self::Output {
+        let mut result = self.clone();
+        for i in 0..N {
+            result[i] = result[i] / rhs;
+        }
+
+        return result;
+    }
+}
+
+impl<T, const N: usize> DivAssign<T> for Vector<T, N>
+where
+    T: Float,
+{
+    fn div_assign(&mut self, rhs: T) {
+        for i in 0..N {
+            self[i] = self[i] / rhs;
         }
     }
 }
