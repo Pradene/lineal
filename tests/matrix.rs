@@ -135,7 +135,8 @@ mod tests {
 
         let result = Matrix::from_row([[0.5, 0., 0.], [0., 0.5, 0.], [0., 0., 0.5]]);
 
-        assert_eq!(result, m.inverse().unwrap())
+        assert_eq!(result, m.inverse().unwrap());
+        assert_eq!(m, m.inverse().unwrap().inverse().unwrap());
     }
 
     #[test]

@@ -241,10 +241,18 @@ where
 
 impl<T, const R: usize, const C: usize> PartialEq for Matrix<T, R, C>
 where
-    T: PartialEq,
+    T: PartialEq + Float,
 {
-    fn eq(&self, matrix: &Self) -> bool {
-        return self.data == matrix.data;
+    fn eq(&self, other: &Self) -> bool {
+        for col in 0..C {
+            for row in 0..R {
+                if (self.data[col][row] - other.data[col][row]).abs() > T::epsilon() {
+                    return false;
+                }
+            }
+        }
+
+        true
     }
 }
 
@@ -355,48 +363,56 @@ impl<T, const S: usize> Matrix<T, S, S>
 where
     T: Float,
 {
-    fn lu_decomposition(&self) -> (Matrix<T, S, S>, Matrix<T, S, S>, usize) {
-        let mut l = Matrix::from_row([[T::zero(); S]; S]);
+    fn lu_decomposition(&self) -> (Matrix<T, S, S>, Matrix<T, S, S>, Vec<usize>) {
+        let mut l = Matrix::new();
         let mut u = self.clone();
-        let mut permutation_count = 0;
-
+        let mut p: Vec<usize> = (0..S).collect(); // Track permutation order [0,1,2,3]
+    
         for i in 0..S {
-            // Pivoting (partial pivoting)
+            // Partial pivoting: find max row in column `i`
             let mut max_row = i;
-            for k in i + 1..S {
-                if u[k][i].abs() > u[max_row][i].abs() {
-                    max_row = k;
+            for row in i..S {
+                if u.data[i][row].abs() > u.data[i][max_row].abs() {
+                    max_row = row;
                 }
             }
-
+    
             if max_row != i {
-                u.data.swap(i, max_row);
-                permutation_count += 1;
+                // Swap rows in U and L
+                for col in 0..S {
+                    u.data[col].swap(i, max_row);
+                }
+                for col in 0..i {
+                    l.data[col].swap(i, max_row);
+                }
+                p.swap(i, max_row); // Update permutation vector
             }
-
+    
             // Compute L and U
-            for j in i..S {
-                l[j][i] = u[j][i] / u[i][i];
+            let pivot = u.data[i][i];
+            for row in i..S {
+                l.data[i][row] = u.data[i][row] / pivot;
             }
-
-            for j in i + 1..S {
-                for k in i..S {
-                    u[j][k] = u[j][k] - l[j][i] * u[i][k];
+    
+            for row in (i + 1)..S {
+                let factor = l.data[i][row];
+                for col in i..S {
+                    u.data[col][row] = u.data[col][row] - factor * u.data[col][i];
                 }
             }
         }
-
+    
         // Set diagonal of L to 1
         for i in 0..S {
-            l[i][i] = T::one();
+            l.data[i][i] = T::one();
         }
-
-        return (l, u, permutation_count);
+    
+        (l, u, p)
     }
 
     // Function to compute the determinant using LU Decomposition
     pub fn determinant(&self) -> T {
-        let (_, u, permutation_count) = self.lu_decomposition();
+        let (_, u, p) = self.lu_decomposition();
         let mut determinant = T::one();
 
         // Product of diagonal elements of U
@@ -405,53 +421,64 @@ where
         }
 
         // Adjust for row swaps
-        if permutation_count % 2 != 0 {
+        if p.len() % 2 != 0 {
             determinant = -determinant;
         }
 
-        return determinant;
+        determinant
     }
 
     // Function to compute the inverse using LU Decomposition
     pub fn inverse(&self) -> Option<Matrix<T, S, S>> {
-        let det = self.determinant();
+        let (l, u, p) = self.lu_decomposition();
+        let mut inverse: Matrix<T, S, S> = Matrix::new();
+    
+        // Check determinant (product of U's diagonal)
+        let mut det = T::one();
+        for i in 0..S {
+            det = det * u.data[i][i];
+        }
         if det == T::zero() {
             return None;
         }
-
-        let (l, u, _) = self.lu_decomposition();
-        let mut inverse = [[T::zero(); S]; S];
-
-        // Solve for each column of the identity matrix
-        for i in 0..S {
-            let mut b = [T::zero(); S];
-            b[i] = T::one();
-
-            // Solve L * y = b using forward substitution
-            let mut y = [T::zero(); S];
-            for j in 0..S {
-                y[j] = b[j];
-                for k in 0..j {
-                    y[j] = y[j] - l[j][k] * y[k];
+    
+        // Solve for each column of the identity matrix (permuted by p)
+        for col in 0..S {
+            // Apply permutation p to the identity column
+            let mut b = [T::zero(); 4];
+            for i in 0..S {
+                if p[i] == col {
+                    b[i] = T::one();
+                    break;
                 }
             }
-
-            // Solve U * x = y using backward substitution
-            let mut x = [T::zero(); S];
-            for j in (0..S).rev() {
-                x[j] = y[j] / u[j][j];
-                for k in (j + 1..S).rev() {
-                    x[j] = x[j] - u[j][k] * x[k] / u[j][j];
+    
+            // Forward substitution: solve L * y = b
+            let mut y = [T::zero(); 4];
+            for row in 0..S {
+                y[row] = b[row];
+                for k in 0..row {
+                    y[row] = y[row] - l.data[k][row] * y[k];
                 }
             }
-
-            // Assign the solution to the inverse matrix
-            for j in 0..S {
-                inverse[j][i] = x[j];
+    
+            // Backward substitution: solve U * x = y
+            let mut x = [T::zero(); 4];
+            for row in (0..S).rev() {
+                x[row] = y[row];
+                for k in (row + 1)..S {
+                    x[row] = x[row] - u.data[k][row] * x[k];
+                }
+                x[row] = x[row] / u.data[row][row];
+            }
+    
+            // Assign to inverse matrix (column-major)
+            for row in 0..S {
+                inverse.data[col][row] = x[row];
             }
         }
-
-        return Some(Matrix { data: inverse });
+    
+        Some(inverse)
     }
 
     pub fn identity() -> Self {
