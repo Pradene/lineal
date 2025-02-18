@@ -363,10 +363,11 @@ impl<T, const S: usize> Matrix<T, S, S>
 where
     T: Float,
 {
-    fn lu_decomposition(&self) -> (Matrix<T, S, S>, Matrix<T, S, S>, Vec<usize>) {
+    fn lu_decomposition(&self) -> (Matrix<T, S, S>, Matrix<T, S, S>, Vec<usize>, usize) {
         let mut l = Matrix::new();
         let mut u = self.clone();
-        let mut p: Vec<usize> = (0..S).collect(); // Track permutation order [0,1,2,3]
+        let mut p: Vec<usize> = (0..S).collect();
+        let mut s = 0;
     
         for i in 0..S {
             // Partial pivoting: find max row in column `i`
@@ -386,6 +387,7 @@ where
                     l.data[col].swap(i, max_row);
                 }
                 p.swap(i, max_row); // Update permutation vector
+                s += 1;
             }
     
             // Compute L and U
@@ -407,12 +409,12 @@ where
             l.data[i][i] = T::one();
         }
     
-        (l, u, p)
+        (l, u, p, s)
     }
 
     // Function to compute the determinant using LU Decomposition
     pub fn determinant(&self) -> T {
-        let (_, u, p) = self.lu_decomposition();
+        let (_, u, _, s) = self.lu_decomposition();
         let mut determinant = T::one();
 
         // Product of diagonal elements of U
@@ -421,16 +423,14 @@ where
         }
 
         // Adjust for row swaps
-        if p.len() % 2 != 0 {
-            determinant = -determinant;
-        }
+        determinant = determinant * (-T::one()).powi(s as i32);
 
         determinant
     }
 
     // Function to compute the inverse using LU Decomposition
     pub fn inverse(&self) -> Option<Matrix<T, S, S>> {
-        let (l, u, p) = self.lu_decomposition();
+        let (l, u, p, _) = self.lu_decomposition();
         let mut inverse: Matrix<T, S, S> = Matrix::new();
     
         // Check determinant (product of U's diagonal)
