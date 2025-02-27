@@ -1,7 +1,19 @@
-use num::Float;
+use num::{Float, Signed};
+use crate::constants::EPSILON;
 use std::convert::{From, TryFrom};
 use std::fmt;
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{
+    Add,
+    AddAssign,
+    Div,
+    DivAssign,
+    Index,
+    IndexMut,
+    Mul,
+    MulAssign,
+    Sub,
+    SubAssign
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vector<T, const N: usize> {
@@ -183,10 +195,14 @@ where
 
 impl<T, const N: usize> PartialEq for Vector<T, N>
 where
-    T: PartialEq,
+    T: Copy + PartialEq + Sub<Output = T> + PartialOrd + Into<f64> + Signed,
+    f64: From<T>,
 {
-    fn eq(&self, vector: &Self) -> bool {
-        self.data == vector.data
+    fn eq(&self, other: &Self) -> bool {
+        self.data.iter().zip(other.data.iter()).all(|(&a, &b)| {
+            let diff: f64 = ((a - b).abs()).into();
+            diff.abs() <= EPSILON
+        })
     }
 }
 
@@ -261,34 +277,4 @@ where
             ],
         };
     }
-}
-
-pub fn linear_combination<T, const N: usize>(
-    vectors: &[Vector<T, N>],
-    scalars: &[T],
-) -> Vector<T, N>
-where
-    T: Float,
-{
-    // Check vectors length is not equal to 0
-    assert!(!vectors.is_empty(), "Vectors is empty");
-
-    // Check if vectors length and scalars length are equal
-    assert_eq!(
-        vectors.len(),
-        scalars.len(),
-        "Vectors length and scalars length must be equal"
-    );
-
-    let mut result = Vector::from([T::zero(); N]);
-
-    for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
-        result
-            .data
-            .iter_mut()
-            .zip(vector.data.iter())
-            .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
-    }
-
-    return result;
 }

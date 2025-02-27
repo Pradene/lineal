@@ -1,10 +1,11 @@
+use crate::constants::EPSILON;
 use crate::vector::Vector;
 
 use num::Float;
 use std::fmt;
 use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Matrix<T, const R: usize, const C: usize> {
     pub data: [[T; R]; C],
 }
@@ -241,12 +242,14 @@ where
 
 impl<T, const R: usize, const C: usize> PartialEq for Matrix<T, R, C>
 where
-    T: PartialEq + Float,
+    T: PartialEq + Float + Into<f64>,
+    f64: From<T>
 {
     fn eq(&self, other: &Self) -> bool {
         for col in 0..C {
             for row in 0..R {
-                if (self.data[col][row] - other.data[col][row]).abs() > T::epsilon() {
+                let diff: f64 = (self.data[col][row] - other.data[col][row]).abs().into();
+                if diff.abs() > EPSILON {
                     return false;
                 }
             }
@@ -278,7 +281,7 @@ where
     T: Float,
 {
     pub fn row_echelon(&self) -> Matrix<T, R, C> {
-        let mut result = *self;
+        let mut result = self.clone();
         let mut pivot_row = 0;
 
         // Iterate through columns (not exceeding row count)
@@ -501,47 +504,47 @@ where
     }
 }
 
-pub fn look_at(
-    position: Vector<f32, 3>,
-    target: Vector<f32, 3>,
-    up: Vector<f32, 3>,
-) -> Matrix<f32, 4, 4> {
-    let forward = (position - target).normalize();
-    let right = up.cross(&forward).normalize();
-    let up = forward.cross(&right);
-
-    return Matrix::from_col([
-        // First 3 columns contain basis vectors
-        [right[0], up[0], forward[0], 0.],
-        [right[1], up[1], forward[1], 0.],
-        [right[2], up[2], forward[2], 0.],
-        // Fourth column contains translation
-        [
-            -position.dot(&right),
-            -position.dot(&up),
-            -position.dot(&forward), // RH system uses positive Z forward
-            1.,
-        ],
-    ]);
-}
-
-pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
-    let tan_half_fov = (fov / 2.0).tan();
-    let fov_factor = 1. / tan_half_fov;
-    let range = near - far;
-
-    Matrix::from_col([
-        [fov_factor / ratio, 0., 0., 0.],
-        [0., fov_factor, 0., 0.], // Negate for Vulkan-style Y-axis
-        [0., 0., far / range, -1.],
-        [0., 0., (far * near) / range, 0.],
-    ])
-}
-
 impl<T> Matrix<T, 4, 4>
 where
     T: Float,
 {
+    pub fn look_at(
+        position: Vector<f32, 3>,
+        target: Vector<f32, 3>,
+        up: Vector<f32, 3>,
+    ) -> Matrix<f32, 4, 4> {
+        let forward = (position - target).normalize();
+        let right = up.cross(&forward).normalize();
+        let up = forward.cross(&right);
+
+        return Matrix::from_col([
+            // First 3 columns contain basis vectors
+            [right[0], up[0], forward[0], 0.],
+            [right[1], up[1], forward[1], 0.],
+            [right[2], up[2], forward[2], 0.],
+            // Fourth column contains translation
+            [
+                -position.dot(&right),
+                -position.dot(&up),
+                -position.dot(&forward), // RH system uses positive Z forward
+                1.,
+            ],
+        ]);
+    }
+
+    pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
+        let tan_half_fov = (fov / 2.0).tan();
+        let fov_factor = 1. / tan_half_fov;
+        let range = near - far;
+
+        Matrix::from_col([
+            [fov_factor / ratio, 0., 0., 0.],
+            [0., fov_factor, 0., 0.], // Negate for Vulkan-style Y-axis
+            [0., 0., far / range, -1.],
+            [0., 0., (far * near) / range, 0.],
+        ])
+    }
+
     pub fn translate(&self, position: Vector<T, 3>) -> Matrix<T, 4, 4> {
         let translation = Matrix::from_col([
             [T::one(), T::zero(), T::zero(), T::zero()],
@@ -550,7 +553,7 @@ where
             [position[0], position[1], position[2], T::one()],
         ]);
 
-        return translation * *self;
+        return translation * self.clone();
     }
 
     pub fn rotate(&self, angle: T, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
@@ -580,6 +583,6 @@ where
             [T::zero(), T::zero(), T::zero(), T::one()],
         ]);
 
-        return rotation * *self;
+        return rotation * self.clone();
     }
 }
