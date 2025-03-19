@@ -253,7 +253,6 @@ where
         return squared_sum.powf(T::from(0.5).unwrap());
     }
 
-    // Normalize the vector
     pub fn normalize(&self) -> Vector<T, N> {
         let len = self.length();
         if len > T::zero() {
@@ -276,5 +275,37 @@ where
                 self[0] * v[1] - self[1] * v[0],
             ],
         };
+    }
+}
+
+impl<T, const N: usize> Vector<T, N>
+where
+    T: Float
+{
+    pub fn linear_combination(
+        vectors: &[Vector<T, N>],
+        scalars: &[T],
+    ) -> Vector<T, N> {
+        // Check vectors length is not equal to 0
+        assert!(!vectors.is_empty(), "Vectors is empty");
+    
+        // Check if vectors length and scalars length are equal
+        assert_eq!(
+            vectors.len(),
+            scalars.len(),
+            "Vectors length and scalars length must be equal"
+        );
+    
+        let mut result = Vector::from([T::zero(); N]);
+    
+        for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
+            result
+                .data
+                .iter_mut()
+                .zip(vector.data.iter())
+                .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
+        }
+    
+        return result;
     }
 }

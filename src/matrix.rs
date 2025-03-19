@@ -150,7 +150,6 @@ where
 {
     type Output = Matrix<T, R, P>;
 
-    // Matrix multiplication: self (R x C) * matrix (C x P) -> result (R x P)
     fn mul(self, rhs: Matrix<T, C, P>) -> Self::Output {
         let mut result = Matrix {
             data: [[T::zero(); R]; P],
@@ -280,17 +279,15 @@ impl<T, const R: usize, const C: usize> Matrix<T, R, C>
 where
     T: Float,
 {
-    pub fn row_echelon(&self) -> Matrix<T, R, C> {
+    pub fn row_echelon(&self) -> Self {
         let mut result = self.clone();
         let mut pivot_row = 0;
 
-        // Iterate through columns (not exceeding row count)
         for col in 0..C.min(R) {
             if pivot_row >= R {
                 break;
             }
 
-            // Find pivot in current column (row-major perspective)
             let mut pivot = None;
             for r in pivot_row..R {
                 if result.data[col][r].abs() > T::epsilon() {
@@ -301,25 +298,21 @@ where
 
             let Some(pivot) = pivot else { continue };
 
-            // Swap rows in column-major storage
             if pivot != pivot_row {
                 for c in 0..C {
                     result.data[c].swap(pivot_row, pivot);
                 }
             }
 
-            // Normalize pivot r
             let pivot_val = result.data[col][pivot_row];
             if pivot_val.abs() <= T::epsilon() {
                 continue;
             }
 
-            // Normalize current pivot r
             for c in col..C {
                 result.data[c][pivot_row] = result.data[c][pivot_row] / pivot_val;
             }
 
-            // Eliminate other rows
             for r in 0..R {
                 if r == pivot_row {
                     continue;
@@ -341,7 +334,6 @@ where
         let rref = self.row_echelon();
         let mut rank = 0;
 
-        // Check for non-zero rows (column-major perspective)
         for r in 0..R {
             let mut all_zero = true;
             for c in 0..C {
@@ -366,14 +358,13 @@ impl<T, const S: usize> Matrix<T, S, S>
 where
     T: Float,
 {
-    fn lu_decomposition(&self) -> (Matrix<T, S, S>, Matrix<T, S, S>, Vec<usize>, usize) {
+    fn lu_decomposition(&self) -> (Self, Self, Vec<usize>, usize) {
         let mut l = Matrix::new();
         let mut u = self.clone();
         let mut p: Vec<usize> = (0..S).collect();
         let mut s = 0;
     
         for i in 0..S {
-            // Partial pivoting: find max row in column `i`
             let mut max_row = i;
             for row in i..S {
                 if u.data[i][row].abs() > u.data[i][max_row].abs() {
@@ -382,18 +373,16 @@ where
             }
     
             if max_row != i {
-                // Swap rows in U and L
                 for col in 0..S {
                     u.data[col].swap(i, max_row);
                 }
                 for col in 0..i {
                     l.data[col].swap(i, max_row);
                 }
-                p.swap(i, max_row); // Update permutation vector
+                p.swap(i, max_row);
                 s += 1;
             }
     
-            // Compute L and U
             let pivot = u.data[i][i];
             for row in i..S {
                 l.data[i][row] = u.data[i][row] / pivot;
@@ -407,7 +396,6 @@ where
             }
         }
     
-        // Set diagonal of L to 1
         for i in 0..S {
             l.data[i][i] = T::one();
         }
@@ -415,28 +403,23 @@ where
         (l, u, p, s)
     }
 
-    // Function to compute the determinant using LU Decomposition
     pub fn determinant(&self) -> T {
         let (_, u, _, s) = self.lu_decomposition();
         let mut determinant = T::one();
 
-        // Product of diagonal elements of U
         for i in 0..S {
             determinant = determinant * u[i][i];
         }
 
-        // Adjust for row swaps
         determinant = determinant * (-T::one()).powi(s as i32);
 
         determinant
     }
 
-    // Function to compute the inverse using LU Decomposition
-    pub fn inverse(&self) -> Option<Matrix<T, S, S>> {
+    pub fn inverse(&self) -> Option<Self> {
         let (l, u, p, _) = self.lu_decomposition();
-        let mut inverse: Matrix<T, S, S> = Matrix::new();
+        let mut inverse = Matrix::new();
     
-        // Check determinant (product of U's diagonal)
         let mut det = T::one();
         for i in 0..S {
             det = det * u.data[i][i];
@@ -445,9 +428,7 @@ where
             return None;
         }
     
-        // Solve for each column of the identity matrix (permuted by p)
         for col in 0..S {
-            // Apply permutation p to the identity column
             let mut b = [T::zero(); 4];
             for i in 0..S {
                 if p[i] == col {
@@ -456,7 +437,6 @@ where
                 }
             }
     
-            // Forward substitution: solve L * y = b
             let mut y = [T::zero(); 4];
             for row in 0..S {
                 y[row] = b[row];
@@ -465,7 +445,6 @@ where
                 }
             }
     
-            // Backward substitution: solve U * x = y
             let mut x = [T::zero(); 4];
             for row in (0..S).rev() {
                 x[row] = y[row];
@@ -475,7 +454,6 @@ where
                 x[row] = x[row] / u.data[row][row];
             }
     
-            // Assign to inverse matrix (column-major)
             for row in 0..S {
                 inverse.data[col][row] = x[row];
             }
@@ -509,39 +487,37 @@ where
     T: Float,
 {
     pub fn look_at(
-        position: Vector<f32, 3>,
-        target: Vector<f32, 3>,
-        up: Vector<f32, 3>,
-    ) -> Matrix<f32, 4, 4> {
-        let forward = (position - target).normalize();
+        position: Vector<T, 3>,
+        target: Vector<T, 3>,
+        up: Vector<T, 3>,
+    ) -> Self {
+        let forward = (target - position).normalize();
         let right = up.cross(&forward).normalize();
         let up = forward.cross(&right);
 
         return Matrix::from_col([
-            // First 3 columns contain basis vectors
-            [right[0], up[0], forward[0], 0.],
-            [right[1], up[1], forward[1], 0.],
-            [right[2], up[2], forward[2], 0.],
-            // Fourth column contains translation
+            [right[0],   right[1],   right[2],   T::zero()],
+            [up[0],      up[1],      up[2],      T::zero()],
+            [forward[0], forward[1], forward[2], T::zero()],
             [
                 -position.dot(&right),
                 -position.dot(&up),
-                -position.dot(&forward), // RH system uses positive Z forward
-                1.,
+                -position.dot(&forward),
+                T::one(),
             ],
         ]);
     }
 
-    pub fn projection(fov: f32, ratio: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
-        let tan_half_fov = (fov / 2.0).tan();
-        let fov_factor = 1. / tan_half_fov;
-        let range = near - far;
+    pub fn projection(fov: T, ratio: T, near: T, far: T) -> Self {
+        let tan_half_fov = (fov / T::from(2.0).unwrap()).tan();
+        let fov_factor = T::one() / tan_half_fov;
+        let range = far - near;
 
         Matrix::from_col([
-            [fov_factor / ratio, 0., 0., 0.],
-            [0., fov_factor, 0., 0.], // Negate for Vulkan-style Y-axis
-            [0., 0., far / range, -1.],
-            [0., 0., (far * near) / range, 0.],
+            [fov_factor / ratio, T::zero(),   T::zero(),             T::zero()],
+            [T::zero(),          -fov_factor, T::zero(),             T::zero()], // Negate for Vulkan-style Y-axis
+            [T::zero(),          T::zero(),   far / range,           T::one()],
+            [T::zero(),          T::zero(),   -(far * near) / range, T::zero()],
         ])
     }
 

@@ -1,4 +1,5 @@
-use lineal::{lerp, linear_combination, Vector};
+use lineal::Vector;
+use lineal::lerp;
 
 #[cfg(test)]
 mod tests {
@@ -101,6 +102,6 @@ mod tests {
 
         let result = Vector::from([10., -2., 0.5]);
 
-        assert_eq!(result, linear_combination(&[v1, v2, v3], &[10., -2., 0.5]))
+        assert_eq!(result, Vector::linear_combination(&[v1, v2, v3], &[10., -2., 0.5]))
     }
 }
