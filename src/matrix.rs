@@ -509,15 +509,14 @@ where
     }
 
     pub fn projection(fov: T, ratio: T, near: T, far: T) -> Self {
-        let tan_half_fov = (fov / T::from(2.0).unwrap()).tan();
-        let fov_factor = T::one() / tan_half_fov;
-        let range = far - near;
+        let scale = T::one() / (fov / T::from(2.0).unwrap()).tan();
+        let range = near - far;
 
         Matrix::from_col([
-            [fov_factor / ratio, T::zero(),   T::zero(),             T::zero()],
-            [T::zero(),          -fov_factor, T::zero(),             T::zero()], // Negate for Vulkan-style Y-axis
-            [T::zero(),          T::zero(),   far / range,           T::one()],
-            [T::zero(),          T::zero(),   -(far * near) / range, T::zero()],
+            [scale / ratio, T::zero(), T::zero(),            T::zero()],
+            [T::zero(),     scale,     T::zero(),            T::zero()],
+            [T::zero(),     T::zero(), (far + near) / range, -T::one()],
+            [T::zero(),     T::zero(), (far * near) / range, T::zero()],
         ])
     }
 
