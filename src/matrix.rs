@@ -5,7 +5,7 @@ use num::Float;
 use std::fmt;
 use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Matrix<T, const R: usize, const C: usize> {
     pub data: [[T; R]; C],
 }
@@ -15,13 +15,13 @@ where
     T: Float,
 {
     pub fn new() -> Self {
-        return Matrix {
+        Matrix {
             data: [[T::zero(); R]; C],
-        };
+        }
     }
 
     pub fn from_col(cols: [[T; R]; C]) -> Self {
-        return Matrix { data: cols };
+        Matrix { data: cols }
     }
 
     pub fn from_row(rows: [[T; C]; R]) -> Self {
@@ -31,7 +31,8 @@ where
                 data[c][r] = rows[r][c];
             }
         }
-        return Matrix { data };
+
+        Matrix { data }
     }
 }
 
@@ -55,7 +56,7 @@ where
         }
         write!(f, "\n]")?;
 
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -96,7 +97,7 @@ where
             }
         }
 
-        return result;
+        result
     }
 }
 
@@ -127,7 +128,7 @@ where
             }
         }
 
-        return result;
+        result
     }
 }
 
@@ -165,7 +166,7 @@ where
             }
         }
 
-        return result;
+        result
     }
 }
 
@@ -204,7 +205,7 @@ where
             }
         }
 
-        return result;
+        result
     }
 }
 
@@ -222,7 +223,7 @@ where
             }
         }
 
-        return result;
+        result
     }
 }
 
@@ -271,7 +272,7 @@ where
             }
         }
 
-        return Matrix::from_col(data);
+        Matrix::from_col(data)
     }
 }
 
@@ -281,13 +282,17 @@ where
 {
     pub fn row_echelon(&self) -> Self {
         let mut result = self.clone();
+        let mut pivot_rows = vec![None; C]; // Track which row contains a pivot for each column
+        
+        // Forward phase: Get to row echelon form
         let mut pivot_row = 0;
-
-        for col in 0..C.min(R) {
+        for col in 0..C {
+            // Stop if we've processed all rows
             if pivot_row >= R {
                 break;
             }
-
+            
+            // Find first non-zero element in current column (starting from pivot_row)
             let mut pivot = None;
             for r in pivot_row..R {
                 if result.data[col][r].abs() > T::epsilon() {
@@ -295,41 +300,59 @@ where
                     break;
                 }
             }
-
-            let Some(pivot) = pivot else { continue };
-
-            if pivot != pivot_row {
-                for c in 0..C {
-                    result.data[c].swap(pivot_row, pivot);
+            
+            // If no pivot found, continue to next column
+            if let Some(pivot_idx) = pivot {
+                // Record which row contains a pivot for this column
+                pivot_rows[col] = Some(pivot_row);
+                
+                // Swap rows if needed
+                if pivot_idx != pivot_row {
+                    for c in 0..C {
+                        let temp = result.data[c][pivot_idx];
+                        result.data[c][pivot_idx] = result.data[c][pivot_row];
+                        result.data[c][pivot_row] = temp;
+                    }
                 }
-            }
-
-            let pivot_val = result.data[col][pivot_row];
-            if pivot_val.abs() <= T::epsilon() {
-                continue;
-            }
-
-            for c in col..C {
-                result.data[c][pivot_row] = result.data[c][pivot_row] / pivot_val;
-            }
-
-            for r in 0..R {
-                if r == pivot_row {
-                    continue;
-                }
-
-                let factor = result.data[col][r];
+                
+                // Scale the pivot row to make pivot element 1
+                let pivot_val = result.data[col][pivot_row];
                 for c in col..C {
-                    result.data[c][r] = result.data[c][r] - factor * result.data[c][pivot_row];
+                    result.data[c][pivot_row] = result.data[c][pivot_row] / pivot_val;
+                }
+                
+                // Eliminate in other rows (below)
+                for r in (pivot_row + 1)..R {
+                    let factor = result.data[col][r];
+                    if factor.abs() > T::epsilon() {
+                        for c in col..C {
+                            result.data[c][r] = result.data[c][r] - factor * result.data[c][pivot_row];
+                        }
+                    }
+                }
+                
+                pivot_row += 1;
+            }
+        }
+        
+        // Backward phase: Reduce to reduced row echelon form (eliminate above pivots)
+        for col in (0..C).rev() {
+            if let Some(pivot_row) = pivot_rows[col] {
+                // Eliminate entries above pivot
+                for r in 0..pivot_row {
+                    let factor = result.data[col][r];
+                    if factor.abs() > T::epsilon() {
+                        for c in col..C {
+                            result.data[c][r] = result.data[c][r] - factor * result.data[c][pivot_row];
+                        }
+                    }
                 }
             }
-
-            pivot_row += 1;
         }
-
-        return result;
+        
+        result
     }
-
+    
     pub fn rank(&self) -> usize {
         let rref = self.row_echelon();
         let mut rank = 0;
@@ -350,7 +373,7 @@ where
             }
         }
 
-        return rank;
+        rank
     }
 }
 
@@ -469,7 +492,7 @@ where
             data[i][i] = T::one();
         }
 
-        return Matrix::from_row(data);
+        Matrix::from_row(data)
     }
 
     pub fn trace(&self) -> T {
@@ -478,7 +501,7 @@ where
             result = result + self[i][i]
         }
 
-        return result;
+        result
     }
 }
 
@@ -495,7 +518,7 @@ where
         let right = up.cross(&forward).normalize();
         let up = forward.cross(&right);
 
-        return Matrix::from_col([
+        Matrix::from_col([
             [right[0],   right[1],   right[2],   T::zero()],
             [up[0],      up[1],      up[2],      T::zero()],
             [forward[0], forward[1], forward[2], T::zero()],
@@ -505,7 +528,7 @@ where
                 -position.dot(&forward),
                 T::one(),
             ],
-        ]);
+        ])
     }
 
     pub fn projection(fov: T, ratio: T, near: T, far: T) -> Self {
@@ -528,7 +551,7 @@ where
             [position[0], position[1], position[2], T::one()],
         ]);
 
-        return translation * self.clone();
+        translation * self.clone()
     }
 
     pub fn rotate(&self, angle: T, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
@@ -558,6 +581,6 @@ where
             [T::zero(), T::zero(), T::zero(), T::one()],
         ]);
 
-        return rotation * self.clone();
+        rotation * self.clone()
     }
 }

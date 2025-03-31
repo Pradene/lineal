@@ -1,5 +1,5 @@
-use num::{Float, Signed};
 use crate::constants::EPSILON;
+use num::{Float, Signed};
 use std::convert::{From, TryFrom};
 use std::fmt;
 use std::ops::{
@@ -241,6 +241,11 @@ where
         let dot_product = self.dot(v);
         let u_length = self.norm();
         let v_length = v.norm();
+
+        if u_length.is_zero() || v_length.is_zero() {
+            return T::zero();
+        }
+
         return dot_product / (u_length * v_length);
     }
 
