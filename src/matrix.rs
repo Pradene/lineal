@@ -148,7 +148,7 @@ where
 impl<T, const R: usize, const C: usize, const P: usize> Mul<Matrix<T, C, P>> for Matrix<T, R, C>
 where
     T: Float,
-{
+{                // Eliminate entries above pivot
     type Output = Matrix<T, R, P>;
 
     fn mul(self, rhs: Matrix<T, C, P>) -> Self::Output {
@@ -382,7 +382,7 @@ where
     T: Float,
 {
     fn lu_decomposition(&self) -> (Self, Self, Vec<usize>, usize) {
-        let mut l = Matrix::new();
+        let mut l = Matrix::identity();
         let mut u = self.clone();
         let mut p: Vec<usize> = (0..S).collect();
         let mut s = 0;
