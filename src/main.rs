@@ -1,7 +1,4 @@
-use lineal::lerp;
-use lineal::Matrix;
-use lineal::Vector;
-
+use lineal::{lerp, Matrix, Vector};
 
 // Exercice 0
 fn main() {
@@ -13,15 +10,9 @@ fn main() {
     println!("v0 * 2.0 = {}", v0 * 2.0);
     println!("v0 * 4.0 = {}", v0 * 4.0);
 
-    let m0 = Matrix::from_col([
-        [1.0, 2.0],
-        [3.0, 4.0]
-    ]);
+    let m0 = Matrix::from_col([[1.0, 2.0], [3.0, 4.0]]);
 
-    let m1 = Matrix::from_col([
-        [2.0, 3.0],
-        [4.0, 5.0]
-    ]);
+    let m1 = Matrix::from_col([[2.0, 3.0], [4.0, 5.0]]);
 
     println!("m0 + m1 = {}", m0 + m1);
     println!("m1 - m0 = {}", m1 - m0);
@@ -36,10 +27,10 @@ fn main() {
 //     let v2 = Vector::new([0.0, 0.0, 1.0]);
 
 //     println!("v0 * 10.0 + v1 * -2.0 + v2 * 0.5 = {}", Vector::linear_combination(&[v0, v1, v2], &[10.0, -2.0, 0.5]));
-    
+
 //     let v3 = Vector::new([1.0, 2.0, 3.0]);
 //     let v4 = Vector::new([0.0, 10.0, -100.0]);
-    
+
 //     println!("v3 * 10.0 + v4 * -2.0 = {}", Vector::linear_combination(&[v3, v4], &[10.0, -2.0]));
 // }
 
@@ -95,10 +86,10 @@ fn main() {
 // fn main() {
 //     let v = Vector::new([0., 0., 0.]);
 //     println!("{}, {}, {}", v.norm_1(), v.norm(), v.norm_inf());
-    
+
 //     let v = Vector::new([1., 2., 3.]);
 //     println!("{}, {}, {}", v.norm_1(), v.norm(), v.norm_inf());
-    
+
 //     let v = Vector::new([-1., -2.]);
 //     println!("{}, {}, {}", v.norm_1(), v.norm(), v.norm_inf());
 // }
@@ -156,14 +147,14 @@ fn main() {
 //     ]);
 //     let v0 = Vector::new([4., 2.]);
 //     println!("{}", m0 * v0);
-    
+
 //     let m0 = Matrix::from_row([
 //         [2., -2.],
 //         [-2., 2.],
 //     ]);
 //     let v0 = Vector::new([4., 2.]);
 //     println!("{}", m0 * v0);
-    
+
 //     let m0 = Matrix::from_row([
 //         [1., 0.],
 //         [0., 1.],
@@ -173,7 +164,7 @@ fn main() {
 //         [0., 1.]
 //     ]);
 //     println!("{}", m0 * m1);
-    
+
 //     let m0 = Matrix::from_row([
 //         [1., 0.],
 //         [0., 1.],
@@ -183,7 +174,7 @@ fn main() {
 //         [4., 2.],
 //     ]);
 //     println!("{}", m0 * m1);
-    
+
 //     let m0 = Matrix::from_row([
 //         [3., -5.],
 //         [6., 8.],
@@ -250,19 +241,19 @@ fn main() {
 //         [0., 0., 1.],
 //     ]);
 //     println!("{}", u.row_echelon());
-    
+
 //     let u = Matrix::from_row([
 //         [1., 2.],
 //         [3., 4.],
 //     ]);
 //     println!("{}", u.row_echelon());
-    
+
 //     let u = Matrix::from_row([
 //         [1., 2.],
 //         [2., 4.],
 //     ]);
 //     println!("{}", u.row_echelon());
-    
+
 //     let u = Matrix::from_row([
 //         [8., 5., -2., 4., 28.],
 //         [4., 2.5, 20., 4., -4.],
@@ -278,7 +269,7 @@ fn main() {
 //         [-1., 1.],
 //     ]);
 //     println!("{}", m.determinant());
-    
+
 //     let m = Matrix::from_row([
 //         [2., 0., 0.],
 //         [0., 2., 0.],
@@ -292,7 +283,7 @@ fn main() {
 //         [7., 6., 1.],
 //     ]);
 //     println!("{}", m.determinant());
-    
+
 //     let m = Matrix::from_row([
 //         [ 8., 5., -2., 4.],
 //         [ 4., 2.5, 20., 4.],
@@ -310,14 +301,14 @@ fn main() {
 //         [0., 0., 1.],
 //     ]);
 //     println!("{}", m.inverse().unwrap());
-    
+
 //     let m = Matrix::from_row([
 //         [2., 0., 0.],
 //         [0., 2., 0.],
 //         [0., 0., 2.],
 //     ]);
 //     println!("{}", m.inverse().unwrap());
-    
+
 //     let m = Matrix::from_row([
 //         [8., 5., -2.],
 //         [4., 7., 20.],
@@ -359,7 +350,7 @@ fn main() {
 //     let far = 100.0;
 
 //     let proj = Matrix::projection(fov, ratio, near, far);
-    
+
 //     for col in proj.data.iter() {
 //         for value in col {
 //             print!("{value}, ");

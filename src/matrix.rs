@@ -1,9 +1,9 @@
-use crate::constants::EPSILON;
-use crate::vector::Vector;
-
-use num::Float;
-use std::fmt;
-use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
+use {
+    crate::vector::Vector,
+    num::Float,
+    std::fmt,
+    std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix<T, const R: usize, const C: usize> {
@@ -148,7 +148,7 @@ where
 impl<T, const R: usize, const C: usize, const P: usize> Mul<Matrix<T, C, P>> for Matrix<T, R, C>
 where
     T: Float,
-{                // Eliminate entries above pivot
+{
     type Output = Matrix<T, R, P>;
 
     fn mul(self, rhs: Matrix<T, C, P>) -> Self::Output {
@@ -201,7 +201,7 @@ where
 
         for r in 0..R {
             for c in 0..C {
-                result[r] = result[r] + self[r][c] * rhs[c];
+                result[r] = result[r] + self[c][r] * rhs[c];
             }
         }
 
@@ -219,7 +219,7 @@ where
         let mut result = self.clone();
         for r in 0..R {
             for c in 0..C {
-                result[r][c] = result[r][c] * rhs;
+                result[c][r] = result[c][r] * rhs;
             }
         }
 
@@ -234,7 +234,7 @@ where
     fn mul_assign(&mut self, rhs: T) {
         for r in 0..R {
             for c in 0..C {
-                self[r][c] = self[r][c] * rhs;
+                self[c][r] = self[c][r] * rhs;
             }
         }
     }
@@ -243,13 +243,13 @@ where
 impl<T, const R: usize, const C: usize> PartialEq for Matrix<T, R, C>
 where
     T: PartialEq + Float + Into<f64>,
-    f64: From<T>
+    f64: From<T>,
 {
     fn eq(&self, other: &Self) -> bool {
         for col in 0..C {
             for row in 0..R {
                 let diff: f64 = (self.data[col][row] - other.data[col][row]).abs().into();
-                if diff.abs() > EPSILON {
+                if diff.abs() > std::f32::EPSILON as f64 {
                     return false;
                 }
             }
@@ -283,7 +283,7 @@ where
     pub fn row_echelon(&self) -> Self {
         let mut result = self.clone();
         let mut pivot_rows = vec![None; C]; // Track which row contains a pivot for each column
-        
+
         // Forward phase: Get to row echelon form
         let mut pivot_row = 0;
         for col in 0..C {
@@ -291,7 +291,7 @@ where
             if pivot_row >= R {
                 break;
             }
-            
+
             // Find first non-zero element in current column (starting from pivot_row)
             let mut pivot = None;
             for r in pivot_row..R {
@@ -300,12 +300,12 @@ where
                     break;
                 }
             }
-            
+
             // If no pivot found, continue to next column
             if let Some(pivot_idx) = pivot {
                 // Record which row contains a pivot for this column
                 pivot_rows[col] = Some(pivot_row);
-                
+
                 // Swap rows if needed
                 if pivot_idx != pivot_row {
                     for c in 0..C {
@@ -314,27 +314,28 @@ where
                         result.data[c][pivot_row] = temp;
                     }
                 }
-                
+
                 // Scale the pivot row to make pivot element 1
                 let pivot_val = result.data[col][pivot_row];
                 for c in col..C {
                     result.data[c][pivot_row] = result.data[c][pivot_row] / pivot_val;
                 }
-                
+
                 // Eliminate in other rows (below)
                 for r in (pivot_row + 1)..R {
                     let factor = result.data[col][r];
                     if factor.abs() > T::epsilon() {
                         for c in col..C {
-                            result.data[c][r] = result.data[c][r] - factor * result.data[c][pivot_row];
+                            result.data[c][r] =
+                                result.data[c][r] - factor * result.data[c][pivot_row];
                         }
                     }
                 }
-                
+
                 pivot_row += 1;
             }
         }
-        
+
         // Backward phase: Reduce to reduced row echelon form (eliminate above pivots)
         for col in (0..C).rev() {
             if let Some(pivot_row) = pivot_rows[col] {
@@ -343,16 +344,17 @@ where
                     let factor = result.data[col][r];
                     if factor.abs() > T::epsilon() {
                         for c in col..C {
-                            result.data[c][r] = result.data[c][r] - factor * result.data[c][pivot_row];
+                            result.data[c][r] =
+                                result.data[c][r] - factor * result.data[c][pivot_row];
                         }
                     }
                 }
             }
         }
-        
+
         result
     }
-    
+
     pub fn rank(&self) -> usize {
         let rref = self.row_echelon();
         let mut rank = 0;
@@ -360,9 +362,6 @@ where
         for r in 0..R {
             let mut all_zero = true;
             for c in 0..C {
-                if c < r && c >= C {
-                    continue;
-                }
                 if rref.data[c][r].abs() > T::epsilon() {
                     all_zero = false;
                     break;
@@ -386,7 +385,7 @@ where
         let mut u = self.clone();
         let mut p: Vec<usize> = (0..S).collect();
         let mut s = 0;
-    
+
         for i in 0..S {
             let mut max_row = i;
             for row in i..S {
@@ -394,7 +393,7 @@ where
                     max_row = row;
                 }
             }
-    
+
             if max_row != i {
                 for col in 0..S {
                     u.data[col].swap(i, max_row);
@@ -405,12 +404,12 @@ where
                 p.swap(i, max_row);
                 s += 1;
             }
-    
+
             let pivot = u.data[i][i];
             for row in i..S {
                 l.data[i][row] = u.data[i][row] / pivot;
             }
-    
+
             for row in (i + 1)..S {
                 let factor = l.data[i][row];
                 for col in i..S {
@@ -418,11 +417,11 @@ where
                 }
             }
         }
-    
+
         for i in 0..S {
             l.data[i][i] = T::one();
         }
-    
+
         (l, u, p, s)
     }
 
@@ -442,7 +441,7 @@ where
     pub fn inverse(&self) -> Option<Self> {
         let (l, u, p, _) = self.lu_decomposition();
         let mut inverse = Matrix::new();
-    
+
         let mut det = T::one();
         for i in 0..S {
             det = det * u.data[i][i];
@@ -450,25 +449,25 @@ where
         if det == T::zero() {
             return None;
         }
-    
+
         for col in 0..S {
-            let mut b = [T::zero(); 4];
+            let mut b = [T::zero(); S];
             for i in 0..S {
                 if p[i] == col {
                     b[i] = T::one();
                     break;
                 }
             }
-    
-            let mut y = [T::zero(); 4];
+
+            let mut y = [T::zero(); S];
             for row in 0..S {
                 y[row] = b[row];
                 for k in 0..row {
                     y[row] = y[row] - l.data[k][row] * y[k];
                 }
             }
-    
-            let mut x = [T::zero(); 4];
+
+            let mut x = [T::zero(); S];
             for row in (0..S).rev() {
                 x[row] = y[row];
                 for k in (row + 1)..S {
@@ -476,12 +475,12 @@ where
                 }
                 x[row] = x[row] / u.data[row][row];
             }
-    
+
             for row in 0..S {
                 inverse.data[col][row] = x[row];
             }
         }
-    
+
         Some(inverse)
     }
 
@@ -509,18 +508,14 @@ impl<T> Matrix<T, 4, 4>
 where
     T: Float,
 {
-    pub fn look_at(
-        position: Vector<T, 3>,
-        target: Vector<T, 3>,
-        up: Vector<T, 3>,
-    ) -> Self {
+    pub fn look_at(position: Vector<T, 3>, target: Vector<T, 3>, up: Vector<T, 3>) -> Self {
         let forward = (target - position).normalize();
         let right = up.cross(&forward).normalize();
         let up = forward.cross(&right);
 
         Matrix::from_col([
-            [right[0],   right[1],   right[2],   T::zero()],
-            [up[0],      up[1],      up[2],      T::zero()],
+            [right[0], right[1], right[2], T::zero()],
+            [up[0], up[1], up[2], T::zero()],
             [forward[0], forward[1], forward[2], T::zero()],
             [
                 -position.dot(&right),
@@ -536,10 +531,10 @@ where
         let range = near - far;
 
         Matrix::from_col([
-            [scale / ratio, T::zero(), T::zero(),            T::zero()],
-            [T::zero(),     scale,     T::zero(),            T::zero()],
-            [T::zero(),     T::zero(), (far + near) / range, -T::one()],
-            [T::zero(),     T::zero(), (far * near) / range, T::zero()],
+            [scale / ratio, T::zero(), T::zero(), T::zero()],
+            [T::zero(), scale, T::zero(), T::zero()],
+            [T::zero(), T::zero(), (far + near) / range, -T::one()],
+            [T::zero(), T::zero(), (far * near) / range, T::zero()],
         ])
     }
 

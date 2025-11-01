@@ -1,18 +1,8 @@
-use crate::constants::EPSILON;
-use num::{Float, Signed};
-use std::convert::{From, TryFrom};
-use std::fmt;
-use std::ops::{
-    Add,
-    AddAssign,
-    Div,
-    DivAssign,
-    Index,
-    IndexMut,
-    Mul,
-    MulAssign,
-    Sub,
-    SubAssign
+use {
+    num::{Float, Signed},
+    std::convert::{From, TryFrom},
+    std::fmt,
+    std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -201,7 +191,7 @@ where
     fn eq(&self, other: &Self) -> bool {
         self.data.iter().zip(other.data.iter()).all(|(&a, &b)| {
             let diff: f64 = ((a - b).abs()).into();
-            diff.abs() <= EPSILON
+            diff.abs() <= std::f64::EPSILON
         })
     }
 }
@@ -285,24 +275,21 @@ where
 
 impl<T, const N: usize> Vector<T, N>
 where
-    T: Float
+    T: Float,
 {
-    pub fn linear_combination(
-        vectors: &[Vector<T, N>],
-        scalars: &[T],
-    ) -> Vector<T, N> {
+    pub fn linear_combination(vectors: &[Vector<T, N>], scalars: &[T]) -> Vector<T, N> {
         // Check vectors length is not equal to 0
         assert!(!vectors.is_empty(), "Vectors is empty");
-    
+
         // Check if vectors length and scalars length are equal
         assert_eq!(
             vectors.len(),
             scalars.len(),
             "Vectors length and scalars length must be equal"
         );
-    
+
         let mut result = Vector::from([T::zero(); N]);
-    
+
         for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
             result
                 .data
@@ -310,7 +297,7 @@ where
                 .zip(vector.data.iter())
                 .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
         }
-    
+
         return result;
     }
 }

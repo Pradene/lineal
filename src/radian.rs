@@ -1,3 +1,3 @@
-pub fn radian(angle: f32) -> f32 {
-    return angle * (std::f64::consts::PI as f32 / 180.);
+pub fn radian(angle: f64) -> f64 {
+    return angle * (std::f64::consts::PI / 180.0);
 }
