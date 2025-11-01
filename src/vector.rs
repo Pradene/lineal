@@ -60,18 +60,17 @@ impl<T, const N: usize> Index<usize> for Vector<T, N> {
 
     fn index(&self, i: usize) -> &Self::Output {
         if i < N {
-            &self.data[i] // Return a reference to the element at index `i`
+            &self.data[i]
         } else {
             panic!("Index out of bounds");
         }
     }
 }
 
-// Implement IndexMut trait for mutable access to elements (self[i] = value)
 impl<T, const N: usize> IndexMut<usize> for Vector<T, N> {
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         if i < N {
-            &mut self.data[i] // Return a mutable reference to the element at index `i`
+            &mut self.data[i]
         } else {
             panic!("Index out of bounds");
         }
@@ -263,10 +262,8 @@ where
     T: Number,
 {
     pub fn linear_combination(vectors: &[Vector<T, N>], scalars: &[T]) -> Vector<T, N> {
-        // Check vectors length is not equal to 0
         assert!(!vectors.is_empty(), "Vectors is empty");
 
-        // Check if vectors length and scalars length are equal
         assert_eq!(
             vectors.len(),
             scalars.len(),

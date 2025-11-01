@@ -344,7 +344,7 @@ use lineal::{lerp, Matrix, Vector};
 
 // Exercice 14
 fn main() {
-    let fov = 90.0;
+    let fov = (90.0f32).to_radians();
     let ratio = 600.0 / 600.0;
     let near = 0.1;
     let far = 100.0;

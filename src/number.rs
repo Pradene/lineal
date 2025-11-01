@@ -1,6 +1,5 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-/// Trait for scalar types (f32, f64)
 pub trait Number:
     Copy
     + PartialEq
