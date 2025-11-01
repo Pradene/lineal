@@ -1,24 +1,24 @@
 use lineal::{lerp, Matrix, Vector};
 
 // Exercice 0
-fn main() {
-    let v0 = Vector::new([0.0, 1.0, 2.0]);
-    let v1 = Vector::new([3.0, 4.0, 5.0]);
+// fn main() {
+//     let v0 = Vector::new([0.0, 1.0, 2.0]);
+//     let v1 = Vector::new([3.0, 4.0, 5.0]);
 
-    println!("v0 + v1 = {}", v0 + v1);
-    println!("v1 - v0 = {}", v1 - v0);
-    println!("v0 * 2.0 = {}", v0 * 2.0);
-    println!("v0 * 4.0 = {}", v0 * 4.0);
+//     println!("v0 + v1 = {}", v0 + v1);
+//     println!("v1 - v0 = {}", v1 - v0);
+//     println!("v0 * 2.0 = {}", v0 * 2.0);
+//     println!("v0 * 4.0 = {}", v0 * 4.0);
 
-    let m0 = Matrix::from_col([[1.0, 2.0], [3.0, 4.0]]);
+//     let m0 = Matrix::from_col([[1.0, 2.0], [3.0, 4.0]]);
 
-    let m1 = Matrix::from_col([[2.0, 3.0], [4.0, 5.0]]);
+//     let m1 = Matrix::from_col([[2.0, 3.0], [4.0, 5.0]]);
 
-    println!("m0 + m1 = {}", m0 + m1);
-    println!("m1 - m0 = {}", m1 - m0);
-    println!("m0 * 2.0 = {}", m0 * 2.0);
-    println!("m1 * 2.0 = {}", m1 * 2.0);
-}
+//     println!("m0 + m1 = {}", m0 + m1);
+//     println!("m1 - m0 = {}", m1 - m0);
+//     println!("m0 * 2.0 = {}", m0 * 2.0);
+//     println!("m1 * 2.0 = {}", m1 * 2.0);
+// }
 
 // Exercice 1
 // fn main() {
@@ -343,18 +343,18 @@ fn main() {
 // }
 
 // Exercice 14
-// fn main() {
-//     let fov = 90.0;
-//     let ratio = 800.0 / 600.0;
-//     let near = 0.1;
-//     let far = 100.0;
+fn main() {
+    let fov = 90.0;
+    let ratio = 600.0 / 600.0;
+    let near = 0.1;
+    let far = 100.0;
 
-//     let proj = Matrix::projection(fov, ratio, near, far);
+    let proj = Matrix::projection(fov, ratio, near, far);
 
-//     for col in proj.data.iter() {
-//         for value in col {
-//             print!("{value}, ");
-//         }
-//         println!();
-//     }
-// }
+    for col in proj.data.iter() {
+        for value in col {
+            print!("{value}, ");
+        }
+        println!();
+    }
+}

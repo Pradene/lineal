@@ -25,7 +25,8 @@ where
             write!(f, "{}", self[i])?;
         }
         write!(f, "]")?;
-        return Ok(());
+
+        Ok(())
     }
 }
 
@@ -89,7 +90,7 @@ where
             result[i] = result[i] + rhs[i];
         }
 
-        return result;
+        result
     }
 }
 
@@ -114,7 +115,7 @@ where
             result[i] = result[i] - rhs[i];
         }
 
-        return result;
+        result
     }
 }
 
@@ -139,7 +140,7 @@ where
             result[i] = result[i] * scalar;
         }
 
-        return result;
+        result
     }
 }
 
@@ -164,7 +165,7 @@ where
             result[i] = result[i] / rhs;
         }
 
-        return result;
+        result
     }
 }
 
@@ -191,26 +192,24 @@ where
     T: Number,
 {
     pub fn dot(&self, vector: &Vector<T, N>) -> T {
-        return self
-            .data
+        self.data
             .iter()
             .zip(vector.data.iter())
-            .fold(T::ZERO, |sum, (&x, &y)| sum + x * y);
+            .fold(T::ZERO, |sum, (&x, &y)| sum + x * y)
     }
 
     pub fn norm_1(&self) -> T {
-        return self.data.iter().fold(T::ZERO, |sum, &x| sum + x.abs());
+        self.data.iter().fold(T::ZERO, |sum, &x| sum + x.abs())
     }
 
     pub fn norm(&self) -> T {
-        return self.data.iter().fold(T::ZERO, |sum, &x| sum + x * x).sqrt();
+        self.data.iter().fold(T::ZERO, |sum, &x| sum + x * x).sqrt()
     }
 
     pub fn norm_inf(&self) -> T {
-        return self
-            .data
+        self.data
             .iter()
-            .fold(T::ZERO, |sum, &x| T::max(sum, x.abs()));
+            .fold(T::ZERO, |sum, &x| T::max(sum, x.abs()))
     }
 
     pub fn cosine(&self, v: &Vector<T, N>) -> T {
@@ -222,7 +221,7 @@ where
             return T::ZERO;
         }
 
-        return dot_product / (u_length * v_length);
+        dot_product / (u_length * v_length)
     }
 
     fn length(&self) -> T {
@@ -231,16 +230,16 @@ where
             squared_sum = squared_sum + self[i] * self[i];
         }
 
-        return squared_sum.sqrt();
+        squared_sum.sqrt()
     }
 
     pub fn normalize(&self) -> Vector<T, N> {
         let len = self.length();
-        if len > T::ZERO {
-            return Vector::new(self.data.map(|v| v / len));
+        if len == T::ZERO {
+            return self.clone();
         }
 
-        return self.clone();
+        Vector::new(self.data.map(|v| v / len))
     }
 }
 
@@ -249,13 +248,13 @@ where
     T: Number,
 {
     pub fn cross(&self, v: &Vector<T, 3>) -> Vector<T, 3> {
-        return Vector {
+        Vector {
             data: [
                 self[1] * v[2] - self[2] * v[1],
                 self[2] * v[0] - self[0] * v[2],
                 self[0] * v[1] - self[1] * v[0],
             ],
-        };
+        }
     }
 }
 
@@ -284,6 +283,6 @@ where
                 .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
         }
 
-        return result;
+        result
     }
 }
