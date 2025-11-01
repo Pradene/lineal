@@ -1,5 +1,6 @@
 pub mod lerp;
 pub mod matrix;
+pub mod number;
 pub mod radian;
 pub mod vector;
 

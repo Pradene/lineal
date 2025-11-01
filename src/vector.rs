@@ -1,8 +1,10 @@
 use {
-    num::{Float, Signed},
-    std::convert::{From, TryFrom},
-    std::fmt,
-    std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
+    crate::number::Number,
+    std::{
+        convert::{From, TryFrom},
+        fmt,
+        ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
+    },
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -77,7 +79,7 @@ impl<T, const N: usize> IndexMut<usize> for Vector<T, N> {
 
 impl<T, const N: usize> Add for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     type Output = Self;
 
@@ -93,18 +95,16 @@ where
 
 impl<T, const N: usize> AddAssign for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     fn add_assign(&mut self, rhs: Self) {
-        for i in 0..N {
-            self[i] = self[i] + rhs[i];
-        }
+        *self = *self + rhs;
     }
 }
 
 impl<T, const N: usize> Sub for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     type Output = Self;
 
@@ -120,18 +120,16 @@ where
 
 impl<T, const N: usize> SubAssign for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     fn sub_assign(&mut self, rhs: Self) {
-        for i in 0..N {
-            self[i] = self[i] - rhs[i];
-        }
+        *self = *self - rhs;
     }
 }
 
 impl<T, const N: usize> Mul<T> for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     type Output = Self;
 
@@ -147,18 +145,16 @@ where
 
 impl<T, const N: usize> MulAssign<T> for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     fn mul_assign(&mut self, rhs: T) {
-        for i in 0..N {
-            self[i] = self[i] * rhs;
-        }
+        *self = *self * rhs;
     }
 }
 
 impl<T, const N: usize> Div<T> for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     type Output = Self;
 
@@ -174,57 +170,47 @@ where
 
 impl<T, const N: usize> DivAssign<T> for Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     fn div_assign(&mut self, rhs: T) {
-        for i in 0..N {
-            self[i] = self[i] / rhs;
-        }
+        *self = *self / rhs;
     }
 }
 
-impl<T, const N: usize> PartialEq for Vector<T, N>
-where
-    T: Copy + PartialEq + Sub<Output = T> + PartialOrd + Into<f64> + Signed,
-    f64: From<T>,
-{
+impl<T: Number, const N: usize> PartialEq for Vector<T, N> {
     fn eq(&self, other: &Self) -> bool {
-        self.data.iter().zip(other.data.iter()).all(|(&a, &b)| {
-            let diff: f64 = ((a - b).abs()).into();
-            diff.abs() <= std::f64::EPSILON
-        })
+        self.data
+            .iter()
+            .zip(other.data.iter())
+            .all(|(&a, &b)| (a - b).abs() <= T::EPSILON)
     }
 }
 
 impl<T, const N: usize> Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     pub fn dot(&self, vector: &Vector<T, N>) -> T {
         return self
             .data
             .iter()
             .zip(vector.data.iter())
-            .fold(T::zero(), |sum, (&x, &y)| sum + x * y);
+            .fold(T::ZERO, |sum, (&x, &y)| sum + x * y);
     }
 
     pub fn norm_1(&self) -> T {
-        return self.data.iter().fold(T::zero(), |sum, &x| sum + x.abs());
+        return self.data.iter().fold(T::ZERO, |sum, &x| sum + x.abs());
     }
 
     pub fn norm(&self) -> T {
-        return self
-            .data
-            .iter()
-            .fold(T::zero(), |sum, &x| sum + x * x)
-            .powf(T::from(0.5).unwrap());
+        return self.data.iter().fold(T::ZERO, |sum, &x| sum + x * x).sqrt();
     }
 
     pub fn norm_inf(&self) -> T {
         return self
             .data
             .iter()
-            .fold(T::zero(), |sum, &x| T::max(sum, x.abs()));
+            .fold(T::ZERO, |sum, &x| T::max(sum, x.abs()));
     }
 
     pub fn cosine(&self, v: &Vector<T, N>) -> T {
@@ -232,25 +218,25 @@ where
         let u_length = self.norm();
         let v_length = v.norm();
 
-        if u_length.is_zero() || v_length.is_zero() {
-            return T::zero();
+        if u_length == T::ZERO || v_length == T::ZERO {
+            return T::ZERO;
         }
 
         return dot_product / (u_length * v_length);
     }
 
     fn length(&self) -> T {
-        let mut squared_sum = T::zero();
+        let mut squared_sum = T::ZERO;
         for i in 0..N {
             squared_sum = squared_sum + self[i] * self[i];
         }
 
-        return squared_sum.powf(T::from(0.5).unwrap());
+        return squared_sum.sqrt();
     }
 
     pub fn normalize(&self) -> Vector<T, N> {
         let len = self.length();
-        if len > T::zero() {
+        if len > T::ZERO {
             return Vector::new(self.data.map(|v| v / len));
         }
 
@@ -260,7 +246,7 @@ where
 
 impl<T> Vector<T, 3>
 where
-    T: Float,
+    T: Number,
 {
     pub fn cross(&self, v: &Vector<T, 3>) -> Vector<T, 3> {
         return Vector {
@@ -275,7 +261,7 @@ where
 
 impl<T, const N: usize> Vector<T, N>
 where
-    T: Float,
+    T: Number,
 {
     pub fn linear_combination(vectors: &[Vector<T, N>], scalars: &[T]) -> Vector<T, N> {
         // Check vectors length is not equal to 0
@@ -288,7 +274,7 @@ where
             "Vectors length and scalars length must be equal"
         );
 
-        let mut result = Vector::from([T::zero(); N]);
+        let mut result = Vector::from([T::ZERO; N]);
 
         for (scalar, vector) in scalars.iter().zip(vectors.iter()) {
             result

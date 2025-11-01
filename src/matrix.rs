@@ -1,8 +1,9 @@
 use {
-    crate::vector::Vector,
-    num::Float,
-    std::fmt,
-    std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
+    crate::{number::Number, vector::Vector},
+    std::{
+        fmt,
+        ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
+    },
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -10,13 +11,10 @@ pub struct Matrix<T, const R: usize, const C: usize> {
     pub data: [[T; R]; C],
 }
 
-impl<T, const R: usize, const C: usize> Matrix<T, R, C>
-where
-    T: Float,
-{
+impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn new() -> Self {
         Matrix {
-            data: [[T::zero(); R]; C],
+            data: [[T::ZERO; R]; C],
         }
     }
 
@@ -25,7 +23,7 @@ where
     }
 
     pub fn from_row(rows: [[T; C]; R]) -> Self {
-        let mut data = [[T::zero(); R]; C];
+        let mut data = [[T::ZERO; R]; C];
         for r in 0..R {
             for c in 0..C {
                 data[c][r] = rows[r][c];
@@ -36,10 +34,7 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> fmt::Display for Matrix<T, R, C>
-where
-    T: fmt::Display,
-{
+impl<T: fmt::Display, const R: usize, const C: usize> fmt::Display for Matrix<T, R, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for r in 0..R {
@@ -83,10 +78,7 @@ impl<T, const R: usize, const C: usize> IndexMut<usize> for Matrix<T, R, C> {
     }
 }
 
-impl<T, const R: usize, const C: usize> Add for Matrix<T, R, C>
-where
-    T: Float,
-{
+impl<T: Number, const R: usize, const C: usize> Add for Matrix<T, R, C> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -103,20 +95,16 @@ where
 
 impl<T, const R: usize, const C: usize> AddAssign for Matrix<T, R, C>
 where
-    T: Float,
+    T: Number,
 {
     fn add_assign(&mut self, rhs: Self) {
-        for r in 0..R {
-            for c in 0..C {
-                self[c][r] = self[c][r] + rhs[c][r];
-            }
-        }
+        *self = self.clone() + rhs;
     }
 }
 
 impl<T, const R: usize, const C: usize> Sub for Matrix<T, R, C>
 where
-    T: Float,
+    T: Number,
 {
     type Output = Self;
 
@@ -134,31 +122,27 @@ where
 
 impl<T, const R: usize, const C: usize> SubAssign for Matrix<T, R, C>
 where
-    T: Float,
+    T: Number,
 {
     fn sub_assign(&mut self, rhs: Self) {
-        for r in 0..R {
-            for c in 0..C {
-                self[c][r] = self[c][r] - rhs[c][r];
-            }
-        }
+        *self = self.clone() - rhs;
     }
 }
 
 impl<T, const R: usize, const C: usize, const P: usize> Mul<Matrix<T, C, P>> for Matrix<T, R, C>
 where
-    T: Float,
+    T: Number,
 {
     type Output = Matrix<T, R, P>;
 
     fn mul(self, rhs: Matrix<T, C, P>) -> Self::Output {
         let mut result = Matrix {
-            data: [[T::zero(); R]; P],
+            data: [[T::ZERO; R]; P],
         };
 
         for p in 0..P {
             for r in 0..R {
-                let mut sum = T::zero();
+                let mut sum = T::ZERO;
                 for c in 0..C {
                     sum = sum + self[c][r] * rhs[p][c];
                 }
@@ -170,15 +154,13 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize, const P: usize> MulAssign<Matrix<T, C, P>>
+impl<T: Number, const R: usize, const C: usize, const P: usize> MulAssign<Matrix<T, C, P>>
     for Matrix<T, R, C>
-where
-    T: Float,
 {
     fn mul_assign(&mut self, rhs: Matrix<T, C, P>) {
         for p in 0..P {
             for r in 0..R {
-                let mut sum = T::zero();
+                let mut sum = T::ZERO;
                 for c in 0..C {
                     sum = sum + self[c][r] * rhs[p][c];
                 }
@@ -188,16 +170,11 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> Mul<Vector<T, C>> for Matrix<T, R, C>
-where
-    T: Float,
-{
+impl<T: Number, const R: usize, const C: usize> Mul<Vector<T, C>> for Matrix<T, R, C> {
     type Output = Vector<T, R>;
 
     fn mul(self, rhs: Vector<T, C>) -> Self::Output {
-        let mut result = Vector {
-            data: [T::zero(); R],
-        };
+        let mut result = Vector { data: [T::ZERO; R] };
 
         for r in 0..R {
             for c in 0..C {
@@ -209,10 +186,7 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> Mul<T> for Matrix<T, R, C>
-where
-    T: Float,
-{
+impl<T: Number, const R: usize, const C: usize> Mul<T> for Matrix<T, R, C> {
     type Output = Self;
 
     fn mul(self, rhs: T) -> Self {
@@ -229,7 +203,7 @@ where
 
 impl<T, const R: usize, const C: usize> MulAssign<T> for Matrix<T, R, C>
 where
-    T: Float,
+    T: Number,
 {
     fn mul_assign(&mut self, rhs: T) {
         for r in 0..R {
@@ -242,7 +216,7 @@ where
 
 impl<T, const R: usize, const C: usize> PartialEq for Matrix<T, R, C>
 where
-    T: PartialEq + Float + Into<f64>,
+    T: PartialEq + Number + Into<f64>,
     f64: From<T>,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -261,10 +235,10 @@ where
 
 impl<T, const R: usize, const C: usize> Matrix<T, R, C>
 where
-    T: Float,
+    T: Number,
 {
     pub fn transpose(&self) -> Matrix<T, C, R> {
-        let mut data = [[T::zero(); C]; R];
+        let mut data = [[T::ZERO; C]; R];
 
         for c in 0..C {
             for r in 0..R {
@@ -278,7 +252,7 @@ where
 
 impl<T, const R: usize, const C: usize> Matrix<T, R, C>
 where
-    T: Float,
+    T: Number,
 {
     pub fn row_echelon(&self) -> Self {
         let mut result = self.clone();
@@ -295,7 +269,7 @@ where
             // Find first non-zero element in current column (starting from pivot_row)
             let mut pivot = None;
             for r in pivot_row..R {
-                if result.data[col][r].abs() > T::epsilon() {
+                if result.data[col][r].abs() > T::EPSILON {
                     pivot = Some(r);
                     break;
                 }
@@ -324,7 +298,7 @@ where
                 // Eliminate in other rows (below)
                 for r in (pivot_row + 1)..R {
                     let factor = result.data[col][r];
-                    if factor.abs() > T::epsilon() {
+                    if factor.abs() > T::EPSILON {
                         for c in col..C {
                             result.data[c][r] =
                                 result.data[c][r] - factor * result.data[c][pivot_row];
@@ -342,7 +316,7 @@ where
                 // Eliminate entries above pivot
                 for r in 0..pivot_row {
                     let factor = result.data[col][r];
-                    if factor.abs() > T::epsilon() {
+                    if factor.abs() > T::EPSILON {
                         for c in col..C {
                             result.data[c][r] =
                                 result.data[c][r] - factor * result.data[c][pivot_row];
@@ -362,7 +336,7 @@ where
         for r in 0..R {
             let mut all_zero = true;
             for c in 0..C {
-                if rref.data[c][r].abs() > T::epsilon() {
+                if rref.data[c][r].abs() > T::EPSILON {
                     all_zero = false;
                     break;
                 }
@@ -378,7 +352,7 @@ where
 
 impl<T, const S: usize> Matrix<T, S, S>
 where
-    T: Float,
+    T: Number,
 {
     fn lu_decomposition(&self) -> (Self, Self, Vec<usize>, usize) {
         let mut l = Matrix::identity();
@@ -419,7 +393,7 @@ where
         }
 
         for i in 0..S {
-            l.data[i][i] = T::one();
+            l.data[i][i] = T::ONE;
         }
 
         (l, u, p, s)
@@ -427,13 +401,13 @@ where
 
     pub fn determinant(&self) -> T {
         let (_, u, _, s) = self.lu_decomposition();
-        let mut determinant = T::one();
+        let mut determinant = T::ONE;
 
         for i in 0..S {
             determinant = determinant * u[i][i];
         }
 
-        determinant = determinant * (-T::one()).powi(s as i32);
+        determinant = determinant * (-T::ONE).powi(s as i32);
 
         determinant
     }
@@ -442,24 +416,24 @@ where
         let (l, u, p, _) = self.lu_decomposition();
         let mut inverse = Matrix::new();
 
-        let mut det = T::one();
+        let mut det = T::ONE;
         for i in 0..S {
             det = det * u.data[i][i];
         }
-        if det == T::zero() {
+        if det == T::ZERO {
             return None;
         }
 
         for col in 0..S {
-            let mut b = [T::zero(); S];
+            let mut b = [T::ZERO; S];
             for i in 0..S {
                 if p[i] == col {
-                    b[i] = T::one();
+                    b[i] = T::ONE;
                     break;
                 }
             }
 
-            let mut y = [T::zero(); S];
+            let mut y = [T::ZERO; S];
             for row in 0..S {
                 y[row] = b[row];
                 for k in 0..row {
@@ -467,7 +441,7 @@ where
                 }
             }
 
-            let mut x = [T::zero(); S];
+            let mut x = [T::ZERO; S];
             for row in (0..S).rev() {
                 x[row] = y[row];
                 for k in (row + 1)..S {
@@ -485,17 +459,17 @@ where
     }
 
     pub fn identity() -> Self {
-        let mut data = [[T::zero(); S]; S];
+        let mut data = [[T::ZERO; S]; S];
 
         for i in 0..S {
-            data[i][i] = T::one();
+            data[i][i] = T::ONE;
         }
 
         Matrix::from_row(data)
     }
 
     pub fn trace(&self) -> T {
-        let mut result = T::zero();
+        let mut result = T::ZERO;
         for i in 0..S {
             result = result + self[i][i]
         }
@@ -504,46 +478,43 @@ where
     }
 }
 
-impl<T> Matrix<T, 4, 4>
-where
-    T: Float,
-{
+impl<T: Number> Matrix<T, 4, 4> {
     pub fn look_at(position: Vector<T, 3>, target: Vector<T, 3>, up: Vector<T, 3>) -> Self {
         let forward = (target - position).normalize();
         let right = up.cross(&forward).normalize();
         let up = forward.cross(&right);
 
         Matrix::from_col([
-            [right[0], right[1], right[2], T::zero()],
-            [up[0], up[1], up[2], T::zero()],
-            [forward[0], forward[1], forward[2], T::zero()],
+            [right[0], right[1], right[2], T::ZERO],
+            [up[0], up[1], up[2], T::ZERO],
+            [forward[0], forward[1], forward[2], T::ZERO],
             [
                 -position.dot(&right),
                 -position.dot(&up),
                 -position.dot(&forward),
-                T::one(),
+                T::ONE,
             ],
         ])
     }
 
     pub fn projection(fov: T, ratio: T, near: T, far: T) -> Self {
-        let scale = T::one() / (fov / T::from(2.0).unwrap()).tan();
+        let scale = T::ONE / (fov / (T::ONE + T::ONE)).tan();
         let range = near - far;
 
         Matrix::from_col([
-            [scale / ratio, T::zero(), T::zero(), T::zero()],
-            [T::zero(), scale, T::zero(), T::zero()],
-            [T::zero(), T::zero(), (far + near) / range, -T::one()],
-            [T::zero(), T::zero(), (far * near) / range, T::zero()],
+            [scale / ratio, T::ZERO, T::ZERO, T::ZERO],
+            [T::ZERO, scale, T::ZERO, T::ZERO],
+            [T::ZERO, T::ZERO, (far + near) / range, -T::ONE],
+            [T::ZERO, T::ZERO, (far * near) / range, T::ZERO],
         ])
     }
 
     pub fn translate(&self, position: Vector<T, 3>) -> Matrix<T, 4, 4> {
         let translation = Matrix::from_col([
-            [T::one(), T::zero(), T::zero(), T::zero()],
-            [T::zero(), T::one(), T::zero(), T::zero()],
-            [T::zero(), T::zero(), T::one(), T::zero()],
-            [position[0], position[1], position[2], T::one()],
+            [T::ONE, T::ZERO, T::ZERO, T::ZERO],
+            [T::ZERO, T::ONE, T::ZERO, T::ZERO],
+            [T::ZERO, T::ZERO, T::ONE, T::ZERO],
+            [position[0], position[1], position[2], T::ONE],
         ]);
 
         translation * self.clone()
@@ -556,24 +527,24 @@ where
 
         let rotation = Matrix::from_col([
             [
-                x * x * (T::one() - c) + c,
-                y * x * (T::one() - c) + z * s,
-                z * x * (T::one() - c) - y * s,
-                T::zero(),
+                x * x * (T::ONE - c) + c,
+                y * x * (T::ONE - c) + z * s,
+                z * x * (T::ONE - c) - y * s,
+                T::ZERO,
             ],
             [
-                x * y * (T::one() - c) - z * s,
-                y * y * (T::one() - c) + c,
-                z * y * (T::one() - c) + x * s,
-                T::zero(),
+                x * y * (T::ONE - c) - z * s,
+                y * y * (T::ONE - c) + c,
+                z * y * (T::ONE - c) + x * s,
+                T::ZERO,
             ],
             [
-                x * z * (T::one() - c) + y * s,
-                y * z * (T::one() - c) - x * s,
-                z * z * (T::one() - c) + c,
-                T::zero(),
+                x * z * (T::ONE - c) + y * s,
+                y * z * (T::ONE - c) - x * s,
+                z * z * (T::ONE - c) + c,
+                T::ZERO,
             ],
-            [T::zero(), T::zero(), T::zero(), T::one()],
+            [T::ZERO, T::ZERO, T::ZERO, T::ONE],
         ]);
 
         rotation * self.clone()
