@@ -498,14 +498,16 @@ impl<T: Number> Matrix<T, 4, 4> {
     }
 
     pub fn projection(fov: T, ratio: T, near: T, far: T) -> Self {
-        let scale = T::ONE / (fov / (T::ONE + T::ONE)).tan();
+        let two = T::ONE + T::ONE;
+        let scale = T::ONE / (fov / two).tan();
         let range = near - far;
+        let two_near_far = two * near * far;
 
         Matrix::from_col([
             [scale / ratio, T::ZERO, T::ZERO, T::ZERO],
             [T::ZERO, scale, T::ZERO, T::ZERO],
             [T::ZERO, T::ZERO, (far + near) / range, -T::ONE],
-            [T::ZERO, T::ZERO, (far * near) / range, T::ZERO],
+            [T::ZERO, T::ZERO, two_near_far / range, T::ZERO],
         ])
     }
 
