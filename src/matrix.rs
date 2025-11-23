@@ -222,8 +222,8 @@ where
     fn eq(&self, other: &Self) -> bool {
         for col in 0..C {
             for row in 0..R {
-                let diff: f64 = (self.data[col][row] - other.data[col][row]).abs().into();
-                if diff.abs() > std::f32::EPSILON as f64 {
+                let diff: f64 = f64::from((self.data[col][row] - other.data[col][row]).abs());
+                if diff > std::f32::EPSILON as f64 {
                     return false;
                 }
             }
@@ -282,11 +282,7 @@ where
 
                 // Swap rows if needed
                 if pivot_idx != pivot_row {
-                    for c in 0..C {
-                        let temp = result.data[c][pivot_idx];
-                        result.data[c][pivot_idx] = result.data[c][pivot_row];
-                        result.data[c][pivot_row] = temp;
-                    }
+                    result.data.swap(pivot_idx, pivot_row);
                 }
 
                 // Scale the pivot row to make pivot element 1
@@ -380,6 +376,10 @@ where
             }
 
             let pivot = u.data[i][i];
+            if pivot == T::ZERO {
+                return (l, u, p, s);
+            }
+
             for row in i..S {
                 l.data[i][row] = u.data[i][row] / pivot;
             }

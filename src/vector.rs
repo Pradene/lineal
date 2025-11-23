@@ -277,7 +277,7 @@ where
                 .data
                 .iter_mut()
                 .zip(vector.data.iter())
-                .for_each(|(res, &v)| *res = *res + scalar.clone() * v.clone());
+                .for_each(|(res, &v)| *res = *res + *scalar * v);
         }
 
         result
