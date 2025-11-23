@@ -34,7 +34,7 @@ impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
     }
 }
 
-impl<T: fmt::Display, const R: usize, const C: usize> fmt::Display for Matrix<T, R, C> {
+impl<T: Number + fmt::Display, const R: usize, const C: usize> fmt::Display for Matrix<T, R, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for r in 0..R {
@@ -55,7 +55,7 @@ impl<T: fmt::Display, const R: usize, const C: usize> fmt::Display for Matrix<T,
     }
 }
 
-impl<T, const R: usize, const C: usize> Index<usize> for Matrix<T, R, C> {
+impl<T: Number, const R: usize, const C: usize> Index<usize> for Matrix<T, R, C> {
     type Output = [T; R];
 
     fn index(&self, i: usize) -> &Self::Output {
@@ -68,7 +68,7 @@ impl<T, const R: usize, const C: usize> Index<usize> for Matrix<T, R, C> {
 }
 
 // Implement IndexMut trait for mutable access to elements (self[i] = value)
-impl<T, const R: usize, const C: usize> IndexMut<usize> for Matrix<T, R, C> {
+impl<T: Number, const R: usize, const C: usize> IndexMut<usize> for Matrix<T, R, C> {
     fn index_mut(&mut self, i: usize) -> &mut Self::Output {
         if i < C {
             &mut self.data[i] // Return a mutable reference to the element at index `i`
@@ -82,10 +82,10 @@ impl<T: Number, const R: usize, const C: usize> Add for Matrix<T, R, C> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let mut result = self.clone();
+        let mut result = self;
         for r in 0..R {
             for c in 0..C {
-                result[c][r] = result[c][r] + rhs[c][r];
+                result[c][r] += rhs[c][r];
             }
         }
 
@@ -93,26 +93,20 @@ impl<T: Number, const R: usize, const C: usize> Add for Matrix<T, R, C> {
     }
 }
 
-impl<T, const R: usize, const C: usize> AddAssign for Matrix<T, R, C>
-where
-    T: Number,
-{
+impl<T: Number, const R: usize, const C: usize> AddAssign for Matrix<T, R, C> {
     fn add_assign(&mut self, rhs: Self) {
-        *self = self.clone() + rhs;
+        *self = *self + rhs;
     }
 }
 
-impl<T, const R: usize, const C: usize> Sub for Matrix<T, R, C>
-where
-    T: Number,
-{
+impl<T: Number, const R: usize, const C: usize> Sub for Matrix<T, R, C> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        let mut result = self.clone();
+        let mut result = self;
         for r in 0..R {
             for c in 0..C {
-                result[c][r] = result[c][r] - rhs[c][r];
+                result[c][r] -= rhs[c][r];
             }
         }
 
@@ -120,18 +114,14 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> SubAssign for Matrix<T, R, C>
-where
-    T: Number,
-{
+impl<T: Number, const R: usize, const C: usize> SubAssign for Matrix<T, R, C> {
     fn sub_assign(&mut self, rhs: Self) {
-        *self = self.clone() - rhs;
+        *self = *self - rhs;
     }
 }
 
-impl<T, const R: usize, const C: usize, const P: usize> Mul<Matrix<T, C, P>> for Matrix<T, R, C>
-where
-    T: Number,
+impl<T: Number, const R: usize, const C: usize, const P: usize> Mul<Matrix<T, C, P>>
+    for Matrix<T, R, C>
 {
     type Output = Matrix<T, R, P>;
 
@@ -144,7 +134,7 @@ where
             for r in 0..R {
                 let mut sum = T::ZERO;
                 for c in 0..C {
-                    sum = sum + self[c][r] * rhs[p][c];
+                    sum += self[c][r] * rhs[p][c];
                 }
                 result[p][r] = sum;
             }
@@ -162,7 +152,7 @@ impl<T: Number, const R: usize, const C: usize, const P: usize> MulAssign<Matrix
             for r in 0..R {
                 let mut sum = T::ZERO;
                 for c in 0..C {
-                    sum = sum + self[c][r] * rhs[p][c];
+                    sum += self[c][r] * rhs[p][c];
                 }
                 self[p][r] = sum;
             }
@@ -178,7 +168,7 @@ impl<T: Number, const R: usize, const C: usize> Mul<Vector<T, C>> for Matrix<T, 
 
         for r in 0..R {
             for c in 0..C {
-                result[r] = result[r] + self[c][r] * rhs[c];
+                result[r] += self[c][r] * rhs[c];
             }
         }
 
@@ -190,10 +180,10 @@ impl<T: Number, const R: usize, const C: usize> Mul<T> for Matrix<T, R, C> {
     type Output = Self;
 
     fn mul(self, rhs: T) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         for r in 0..R {
             for c in 0..C {
-                result[c][r] = result[c][r] * rhs;
+                result[c][r] *= rhs;
             }
         }
 
@@ -201,22 +191,18 @@ impl<T: Number, const R: usize, const C: usize> Mul<T> for Matrix<T, R, C> {
     }
 }
 
-impl<T, const R: usize, const C: usize> MulAssign<T> for Matrix<T, R, C>
-where
-    T: Number,
-{
+impl<T: Number, const R: usize, const C: usize> MulAssign<T> for Matrix<T, R, C> {
     fn mul_assign(&mut self, rhs: T) {
         for r in 0..R {
             for c in 0..C {
-                self[c][r] = self[c][r] * rhs;
+                self[c][r] *= rhs;
             }
         }
     }
 }
 
-impl<T, const R: usize, const C: usize> PartialEq for Matrix<T, R, C>
+impl<T: Number, const R: usize, const C: usize> PartialEq for Matrix<T, R, C>
 where
-    T: PartialEq + Number + Into<f64>,
     f64: From<T>,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -233,10 +219,7 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> Matrix<T, R, C>
-where
-    T: Number,
-{
+impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn transpose(&self) -> Matrix<T, C, R> {
         let mut data = [[T::ZERO; C]; R];
 
@@ -250,12 +233,9 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> Matrix<T, R, C>
-where
-    T: Number,
-{
+impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn row_echelon(&self) -> Self {
-        let mut result = self.clone();
+        let mut result = *self;
         let mut pivot_rows = vec![None; C]; // Track which row contains a pivot for each column
 
         // Forward phase: Get to row echelon form
@@ -288,7 +268,7 @@ where
                 // Scale the pivot row to make pivot element 1
                 let pivot_val = result.data[col][pivot_row];
                 for c in col..C {
-                    result.data[c][pivot_row] = result.data[c][pivot_row] / pivot_val;
+                    result.data[c][pivot_row] /= pivot_val;
                 }
 
                 // Eliminate in other rows (below)
@@ -296,8 +276,7 @@ where
                     let factor = result.data[col][r];
                     if factor.abs() > T::EPSILON {
                         for c in col..C {
-                            result.data[c][r] =
-                                result.data[c][r] - factor * result.data[c][pivot_row];
+                            result.data[c][r] -= factor * result.data[c][pivot_row];
                         }
                     }
                 }
@@ -314,8 +293,7 @@ where
                     let factor = result.data[col][r];
                     if factor.abs() > T::EPSILON {
                         for c in col..C {
-                            result.data[c][r] =
-                                result.data[c][r] - factor * result.data[c][pivot_row];
+                            result.data[c][r] -= factor * result.data[c][pivot_row]
                         }
                     }
                 }
@@ -346,13 +324,10 @@ where
     }
 }
 
-impl<T, const S: usize> Matrix<T, S, S>
-where
-    T: Number,
-{
+impl<T: Number, const S: usize> Matrix<T, S, S> {
     fn lu_decomposition(&self) -> (Self, Self, Vec<usize>, usize) {
         let mut l = Matrix::identity();
-        let mut u = self.clone();
+        let mut u = *self;
         let mut p: Vec<usize> = (0..S).collect();
         let mut s = 0;
 
@@ -387,7 +362,7 @@ where
             for row in (i + 1)..S {
                 let factor = l.data[i][row];
                 for col in i..S {
-                    u.data[col][row] = u.data[col][row] - factor * u.data[col][i];
+                    u.data[col][row] -= factor * u.data[col][i];
                 }
             }
         }
@@ -401,15 +376,15 @@ where
 
     pub fn determinant(&self) -> T {
         let (_, u, _, s) = self.lu_decomposition();
-        let mut determinant = T::ONE;
+        let mut det = T::ONE;
 
         for i in 0..S {
-            determinant = determinant * u[i][i];
+            det *= u[i][i];
         }
 
-        determinant = determinant * (-T::ONE).powi(s as i32);
+        det *= (-T::ONE).powi(s as i32);
 
-        determinant
+        det
     }
 
     pub fn inverse(&self) -> Option<Self> {
@@ -418,8 +393,9 @@ where
 
         let mut det = T::ONE;
         for i in 0..S {
-            det = det * u.data[i][i];
+            det *= u.data[i][i];
         }
+
         if det == T::ZERO {
             return None;
         }
@@ -437,7 +413,7 @@ where
             for row in 0..S {
                 y[row] = b[row];
                 for k in 0..row {
-                    y[row] = y[row] - l.data[k][row] * y[k];
+                    y[row] -= l.data[k][row] * y[k];
                 }
             }
 
@@ -445,14 +421,12 @@ where
             for row in (0..S).rev() {
                 x[row] = y[row];
                 for k in (row + 1)..S {
-                    x[row] = x[row] - u.data[k][row] * x[k];
+                    x[row] -= u.data[k][row] * x[k];
                 }
-                x[row] = x[row] / u.data[row][row];
+                x[row] /= u.data[row][row];
             }
 
-            for row in 0..S {
-                inverse.data[col][row] = x[row];
-            }
+            inverse.data[col][..S].copy_from_slice(&x[..S])
         }
 
         Some(inverse)
@@ -471,7 +445,7 @@ where
     pub fn trace(&self) -> T {
         let mut result = T::ZERO;
         for i in 0..S {
-            result = result + self[i][i]
+            result += self[i][i]
         }
 
         result
@@ -519,7 +493,7 @@ impl<T: Number> Matrix<T, 4, 4> {
             [position[0], position[1], position[2], T::ONE],
         ]);
 
-        translation * self.clone()
+        translation * *self
     }
 
     pub fn rotate(&self, angle: T, axis: Vector<T, 3>) -> Matrix<T, 4, 4> {
@@ -549,6 +523,6 @@ impl<T: Number> Matrix<T, 4, 4> {
             [T::ZERO, T::ZERO, T::ZERO, T::ONE],
         ]);
 
-        rotation * self.clone()
+        rotation * *self
     }
 }

@@ -84,9 +84,9 @@ where
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         for i in 0..N {
-            result[i] = result[i] + rhs[i];
+            result[i] += rhs[i];
         }
 
         result
@@ -109,9 +109,9 @@ where
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         for i in 0..N {
-            result[i] = result[i] - rhs[i];
+            result[i] -= rhs[i];
         }
 
         result
@@ -134,9 +134,9 @@ where
     type Output = Self;
 
     fn mul(self, scalar: T) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         for i in 0..N {
-            result[i] = result[i] * scalar;
+            result[i] *= scalar;
         }
 
         result
@@ -152,16 +152,14 @@ where
     }
 }
 
-impl<T, const N: usize> Div<T> for Vector<T, N>
-where
-    T: Number,
+impl<T: Number, const N: usize> Div<T> for Vector<T, N>
 {
     type Output = Self;
 
     fn div(self, rhs: T) -> Self::Output {
-        let mut result = self.clone();
+        let mut result = self;
         for i in 0..N {
-            result[i] = result[i] / rhs;
+            result[i] /= rhs;
         }
 
         result
@@ -226,7 +224,7 @@ where
     fn length(&self) -> T {
         let mut squared_sum = T::ZERO;
         for i in 0..N {
-            squared_sum = squared_sum + self[i] * self[i];
+            squared_sum += self[i] * self[i];
         }
 
         squared_sum.sqrt()
@@ -235,7 +233,7 @@ where
     pub fn normalize(&self) -> Vector<T, N> {
         let len = self.length();
         if len == T::ZERO {
-            return self.clone();
+            return *self;
         }
 
         Vector::new(self.data.map(|v| v / len))
@@ -277,7 +275,7 @@ where
                 .data
                 .iter_mut()
                 .zip(vector.data.iter())
-                .for_each(|(res, &v)| *res = *res + *scalar * v);
+                .for_each(|(res, &v)| *res += *scalar * v);
         }
 
         result
