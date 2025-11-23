@@ -77,10 +77,7 @@ impl<T, const N: usize> IndexMut<usize> for Vector<T, N> {
     }
 }
 
-impl<T, const N: usize> Add for Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> Add for Vector<T, N> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
@@ -93,19 +90,13 @@ where
     }
 }
 
-impl<T, const N: usize> AddAssign for Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> AddAssign for Vector<T, N> {
     fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
 
-impl<T, const N: usize> Sub for Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> Sub for Vector<T, N> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
@@ -118,19 +109,13 @@ where
     }
 }
 
-impl<T, const N: usize> SubAssign for Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> SubAssign for Vector<T, N> {
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
 
-impl<T, const N: usize> Mul<T> for Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> Mul<T> for Vector<T, N> {
     type Output = Self;
 
     fn mul(self, scalar: T) -> Self {
@@ -143,10 +128,7 @@ where
     }
 }
 
-impl<T, const N: usize> MulAssign<T> for Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> MulAssign<T> for Vector<T, N> {
     fn mul_assign(&mut self, rhs: T) {
         *self = *self * rhs;
     }
@@ -165,10 +147,7 @@ impl<T: Number, const N: usize> Div<T> for Vector<T, N> {
     }
 }
 
-impl<T, const N: usize> DivAssign<T> for Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> DivAssign<T> for Vector<T, N> {
     fn div_assign(&mut self, rhs: T) {
         *self = *self / rhs;
     }
@@ -183,10 +162,7 @@ impl<T: Number, const N: usize> PartialEq for Vector<T, N> {
     }
 }
 
-impl<T, const N: usize> Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> Vector<T, N> {
     pub fn dot(&self, vector: &Vector<T, N>) -> T {
         self.data
             .iter()
@@ -239,10 +215,7 @@ where
     }
 }
 
-impl<T> Vector<T, 3>
-where
-    T: Number,
-{
+impl<T: Number> Vector<T, 3> {
     pub fn cross(&self, v: &Vector<T, 3>) -> Vector<T, 3> {
         Vector {
             data: [
@@ -254,10 +227,7 @@ where
     }
 }
 
-impl<T, const N: usize> Vector<T, N>
-where
-    T: Number,
-{
+impl<T: Number, const N: usize> Vector<T, N> {
     pub fn linear_combination(vectors: &[Vector<T, N>], scalars: &[T]) -> Vector<T, N> {
         assert!(!vectors.is_empty(), "Vectors is empty");
 
