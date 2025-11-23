@@ -196,15 +196,12 @@ impl<T: Number, const R: usize, const C: usize> MulAssign<T> for Matrix<T, R, C>
     }
 }
 
-impl<T: Number, const R: usize, const C: usize> PartialEq for Matrix<T, R, C>
-where
-    f64: From<T>,
-{
+impl<T: Number, const R: usize, const C: usize> PartialEq for Matrix<T, R, C> {
     fn eq(&self, other: &Self) -> bool {
         for col in 0..C {
             for row in 0..R {
-                let diff: f64 = f64::from((self.data[col][row] - other.data[col][row]).abs());
-                if diff > std::f32::EPSILON as f64 {
+                let diff = (self.data[col][row] - other.data[col][row]).abs();
+                if diff > T::EPSILON {
                     return false;
                 }
             }
