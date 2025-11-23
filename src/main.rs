@@ -1,4 +1,4 @@
-use lineal::{lerp, Matrix, Vector};
+use lineal::Matrix;
 
 // Exercice 0
 // fn main() {

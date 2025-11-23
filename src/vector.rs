@@ -152,8 +152,7 @@ where
     }
 }
 
-impl<T: Number, const N: usize> Div<T> for Vector<T, N>
-{
+impl<T: Number, const N: usize> Div<T> for Vector<T, N> {
     type Output = Self;
 
     fn div(self, rhs: T) -> Self::Output {

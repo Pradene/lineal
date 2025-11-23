@@ -12,21 +12,16 @@ pub struct Matrix<T, const R: usize, const C: usize> {
 }
 
 impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
-    pub fn new() -> Self {
-        Matrix {
-            data: [[T::ZERO; R]; C],
-        }
-    }
-
     pub fn from_col(cols: [[T; R]; C]) -> Self {
         Matrix { data: cols }
     }
 
     pub fn from_row(rows: [[T; C]; R]) -> Self {
         let mut data = [[T::ZERO; R]; C];
-        for r in 0..R {
-            for c in 0..C {
-                data[c][r] = rows[r][c];
+
+        for (r, row) in rows.iter().enumerate() {
+            for (c, &value) in row.iter().enumerate() {
+                data[c][r] = value;
             }
         }
 
@@ -223,9 +218,9 @@ impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn transpose(&self) -> Matrix<T, C, R> {
         let mut data = [[T::ZERO; C]; R];
 
-        for c in 0..C {
-            for r in 0..R {
-                data[r][c] = self[c][r];
+        for (c, col) in self.data.iter().enumerate() {
+            for (r, &value) in col.iter().enumerate() {
+                data[r][c] = value;
             }
         }
 
@@ -236,64 +231,54 @@ impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
 impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn row_echelon(&self) -> Self {
         let mut result = *self;
-        let mut pivot_rows = vec![None; C]; // Track which row contains a pivot for each column
+        let mut pivot_rows = vec![None; C];
+        let mut pivot_row = 0;
 
         // Forward phase: Get to row echelon form
-        let mut pivot_row = 0;
-        for col in 0..C {
-            // Stop if we've processed all rows
+        (0..C).for_each(|col| {
             if pivot_row >= R {
-                break;
+                return;
             }
 
             // Find first non-zero element in current column (starting from pivot_row)
-            let mut pivot = None;
-            for r in pivot_row..R {
-                if result.data[col][r].abs() > T::EPSILON {
-                    pivot = Some(r);
-                    break;
-                }
-            }
+            let pivot_idx = (pivot_row..R).find(|&r| result.data[col][r].abs() > T::EPSILON);
 
-            // If no pivot found, continue to next column
-            if let Some(pivot_idx) = pivot {
-                // Record which row contains a pivot for this column
+            if let Some(idx) = pivot_idx {
                 pivot_rows[col] = Some(pivot_row);
 
                 // Swap rows if needed
-                if pivot_idx != pivot_row {
-                    result.data.swap(pivot_idx, pivot_row);
+                if idx != pivot_row {
+                    result.data.swap(idx, pivot_row);
                 }
 
                 // Scale the pivot row to make pivot element 1
                 let pivot_val = result.data[col][pivot_row];
-                for c in col..C {
+                (col..C).for_each(|c| {
                     result.data[c][pivot_row] /= pivot_val;
-                }
+                });
 
                 // Eliminate in other rows (below)
-                for r in (pivot_row + 1)..R {
+                ((pivot_row + 1)..R).for_each(|r| {
                     let factor = result.data[col][r];
                     if factor.abs() > T::EPSILON {
-                        for c in col..C {
+                        (col..C).for_each(|c| {
                             result.data[c][r] -= factor * result.data[c][pivot_row];
-                        }
+                        });
                     }
-                }
+                });
 
                 pivot_row += 1;
             }
-        }
+        });
 
         // Backward phase: Reduce to reduced row echelon form (eliminate above pivots)
         for col in (0..C).rev() {
             if let Some(pivot_row) = pivot_rows[col] {
-                // Eliminate entries above pivot
                 for r in 0..pivot_row {
                     let factor = result.data[col][r];
                     if factor.abs() > T::EPSILON {
                         for c in col..C {
-                            result.data[c][r] -= factor * result.data[c][pivot_row]
+                            result.data[c][r] -= factor * result.data[c][pivot_row];
                         }
                     }
                 }
@@ -389,7 +374,7 @@ impl<T: Number, const S: usize> Matrix<T, S, S> {
 
     pub fn inverse(&self) -> Option<Self> {
         let (l, u, p, _) = self.lu_decomposition();
-        let mut inverse = Matrix::new();
+        let mut inverse = Matrix::from_col([[T::ZERO; S]; S]);
 
         let mut det = T::ONE;
         for i in 0..S {
@@ -400,7 +385,7 @@ impl<T: Number, const S: usize> Matrix<T, S, S> {
             return None;
         }
 
-        for col in 0..S {
+        (0..S).for_each(|col| {
             let mut b = [T::ZERO; S];
             for i in 0..S {
                 if p[i] == col {
@@ -410,24 +395,24 @@ impl<T: Number, const S: usize> Matrix<T, S, S> {
             }
 
             let mut y = [T::ZERO; S];
-            for row in 0..S {
+            (0..S).for_each(|row| {
                 y[row] = b[row];
                 for k in 0..row {
                     y[row] -= l.data[k][row] * y[k];
                 }
-            }
+            });
 
             let mut x = [T::ZERO; S];
-            for row in (0..S).rev() {
+            (0..S).rev().for_each(|row| {
                 x[row] = y[row];
                 for k in (row + 1)..S {
                     x[row] -= u.data[k][row] * x[k];
                 }
                 x[row] /= u.data[row][row];
-            }
+            });
 
             inverse.data[col][..S].copy_from_slice(&x[..S])
-        }
+        });
 
         Some(inverse)
     }
@@ -435,9 +420,9 @@ impl<T: Number, const S: usize> Matrix<T, S, S> {
     pub fn identity() -> Self {
         let mut data = [[T::ZERO; S]; S];
 
-        for i in 0..S {
+        (0..S).for_each(|i| {
             data[i][i] = T::ONE;
-        }
+        });
 
         Matrix::from_row(data)
     }
