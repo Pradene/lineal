@@ -412,12 +412,7 @@ impl<T: Number, const S: usize> Matrix<T, S, S> {
     }
 
     pub fn trace(&self) -> T {
-        let mut result = T::ZERO;
-        for i in 0..S {
-            result += self[i][i]
-        }
-
-        result
+        (0..S).fold(T::ZERO, |acc, i| acc + self[i][i])
     }
 }
 
