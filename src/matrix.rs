@@ -324,7 +324,7 @@ impl<T: Number, const S: usize> Matrix<T, S, S> {
                 return (l, u, p, s);
             }
 
-            for row in i..S {
+            for row in (i + 1)..S {
                 l.data[i][row] = u.data[i][row] / pivot;
             }
 
