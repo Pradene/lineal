@@ -12,10 +12,7 @@ pub struct Vector<T, const N: usize> {
     pub data: [T; N],
 }
 
-impl<T, const N: usize> fmt::Display for Vector<T, N>
-where
-    T: fmt::Display,
-{
+impl<T: fmt::Display, const N: usize> fmt::Display for Vector<T, N> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for i in 0..N {
@@ -185,33 +182,23 @@ impl<T: Number, const N: usize> Vector<T, N> {
     }
 
     pub fn cosine(&self, v: &Vector<T, N>) -> T {
-        let dot_product = self.dot(v);
         let u_length = self.norm();
         let v_length = v.norm();
 
-        if u_length == T::ZERO || v_length == T::ZERO {
+        if (u_length * v_length).abs() <= T::EPSILON {
             return T::ZERO;
         }
 
-        dot_product / (u_length * v_length)
-    }
-
-    fn length(&self) -> T {
-        let mut squared_sum = T::ZERO;
-        for i in 0..N {
-            squared_sum += self[i] * self[i];
-        }
-
-        squared_sum.sqrt()
+        self.dot(v) / (u_length * v_length)
     }
 
     pub fn normalize(&self) -> Vector<T, N> {
-        let len = self.length();
-        if len == T::ZERO {
+        let length = self.norm();
+        if length.abs() <= T::EPSILON {
             return *self;
         }
 
-        Vector::new(self.data.map(|v| v / len))
+        Vector::new(self.data.map(|v| v / length))
     }
 }
 

@@ -287,22 +287,9 @@ impl<T: Number, const R: usize, const C: usize> Matrix<T, R, C> {
 
     pub fn rank(&self) -> usize {
         let rref = self.row_echelon();
-        let mut rank = 0;
-
-        for r in 0..R {
-            let mut all_zero = true;
-            for c in 0..C {
-                if rref.data[c][r].abs() > T::EPSILON {
-                    all_zero = false;
-                    break;
-                }
-            }
-            if !all_zero {
-                rank += 1;
-            }
-        }
-
-        rank
+        (0..R)
+            .filter(|&r| rref.data.iter().any(|col| col[r].abs() > T::EPSILON))
+            .count()
     }
 }
 
